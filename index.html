@@ -10,27 +10,36 @@
 <script>
 let img;
 let pixelsToDraw = [];
-let step = 800; // pixels drawn per frame
+let step = 3000; // pixels per frame
+let imgLoaded = false;
 
 function preload() {
-  // Replace this URL with your elephant image URL
-  img = loadImage('https://i.imgur.com/J0uXy3f.png'); 
+  // ⚠️ Use a same-origin image (local file or CORS-enabled URL)
+  img = loadImage('elephant.png', ()=>{ imgLoaded = true; });
 }
 
 function setup() {
+  if(!imgLoaded){
+    createCanvas(400,400);
+    background(0);
+    textSize(20);
+    fill(255);
+    textAlign(CENTER,CENTER);
+    text("Image not loaded", width/2, height/2);
+    noLoop();
+    return;
+  }
+
   createCanvas(img.width, img.height);
   img.loadPixels();
 
-  // Store all pixels with position and color
-  for(let x = 0; x < img.width; x++){
-    for(let y = 0; y < img.height; y++){
-      let c = img.get(x, y);
-      // Skip fully transparent pixels (optional)
-      if (alpha(c) > 0) pixelsToDraw.push({x: x, y: y, color: c});
+  for(let x=0; x<img.width; x++){
+    for(let y=0; y<img.height; y++){
+      let c = img.get(x,y);
+      if(alpha(c) > 0) pixelsToDraw.push({x:x, y:y, color:c});
     }
   }
-
-  background(34); // dark background
+  background(34);
   frameRate(60);
 }
 
@@ -39,11 +48,10 @@ function draw() {
     let idx = floor(random(pixelsToDraw.length));
     let p = pixelsToDraw.splice(idx,1)[0];
     stroke(p.color);
-    point(p.x, p.y);
+    point(p.x,p.y);
   }
-
   if(pixelsToDraw.length == 0){
-    noLoop(); // stop animation when done
+    noLoop();
   }
 }
 </script>
