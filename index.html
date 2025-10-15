@@ -1,133 +1,171 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>3D Abstract Art — Working</title>
+  <title>Logo Variant Generator (SVG)</title>
   <style>
-    html,body { height:100%; margin:0; background: radial-gradient(circle at center, #03010f, #000); overflow:hidden; }
-    #info { position: absolute; left: 12px; top: 12px; z-index: 10; color: #fff; font-family: sans-serif; }
-    a { color: #88f; }
+    body { font-family: Arial, sans-serif; display:flex; gap:20px; padding:20px; background:#0f0f14; color:#fff; }
+    #controls { width:320px; }
+    button, select { margin-top:8px; padding:8px 10px; font-size:14px; }
+    #preview { background:#fff; padding:12px; border-radius:8px; }
+    svg { width:300px; height:300px; display:block; }
+    .small { font-size:12px; opacity:0.85; color:#ddd; }
   </style>
 </head>
 <body>
-  <div id="info">🪐 3D Abstract Art — drag to orbit, scroll to zoom</div>
+  <div id="controls">
+    <h3>Logo Variant Generator</h3>
+    <label class="small">Base shape</label><br/>
+    <select id="shape">
+      <option value="circle">Circle</option>
+      <option value="hex">Hexagon</option>
+      <option value="triangle">Triangle</option>
+      <option value="square">Square</option>
+    </select><br/>
+    <label class="small">Accent style</label><br/>
+    <select id="accent">
+      <option value="slash">Slash</option>
+      <option value="dots">Dots</option>
+      <option value="ring">Ring</option>
+    </select><br/>
+    <label class="small">Color palette</label><br/>
+    <select id="palette">
+      <option value="1">Warm (coral,yellow,green)</option>
+      <option value="2">Cool (blue,teal,purple)</option>
+      <option value="3">Mono (black,gray,white)</option>
+    </select><br/>
+    <button id="regen">Generate Variant</button>
+    <button id="downloadSvg">Download SVG</button>
+    <button id="downloadPng">Download PNG</button>
+    <p class="small">Tip: Use SVG for logos. PNG for social media thumbnails.</p>
+  </div>
 
-  <!-- Use module imports from unpkg (works well on GitHub Pages / local) -->
-  <script type="module">
-    import * as THREE from 'https://unpkg.com/three@0.152.2/build/three.module.js';
-    import { OrbitControls } from 'https://unpkg.com/three@0.152.2/examples/jsm/controls/OrbitControls.js';
+  <div id="preview">
+    <svg id="logoSVG" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"></svg>
+  </div>
 
-    let scene, camera, renderer, controls;
-    let shapes = [];
+<script>
+const svg = document.getElementById('logoSVG');
+const shapeSel = document.getElementById('shape');
+const accentSel = document.getElementById('accent');
+const paletteSel = document.getElementById('palette');
 
-    init();
-    animate();
+function palettes(i) {
+  if (i==='1') return ['#FF6B6B','#FFD93D','#6BCB77'];
+  if (i==='2') return ['#4D96FF','#28C7A9','#C77DFF'];
+  return ['#0B0B0B','#666666','#FFFFFF'];
+}
 
-    function init() {
-      // Scene + camera
-      scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x00000a);
+function draw() {
+  const shape = shapeSel.value;
+  const accent = accentSel.value;
+  const pal = palettes(paletteSel.value);
+  svg.innerHTML = ''; // clear
 
-      const aspect = window.innerWidth / window.innerHeight;
-      camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000);
-      camera.position.set(0, 20, 80);
+  // background circle / card
+  const bg = document.createElementNS(svg.namespaceURI,'rect');
+  bg.setAttribute('x',0); bg.setAttribute('y',0); bg.setAttribute('width',200); bg.setAttribute('height',200);
+  bg.setAttribute('rx',26); bg.setAttribute('fill',pal[2]); bg.setAttribute('opacity',0.06);
+  svg.appendChild(bg);
 
-      // Renderer
-      renderer = new THREE.WebGLRenderer({ antialias: true });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.outputEncoding = THREE.sRGBEncoding;
-      renderer.physicallyCorrectLights = true;
-      document.body.appendChild(renderer.domElement);
+  // base shape
+  let base;
+  if (shape === 'circle') {
+    base = document.createElementNS(svg.namespaceURI,'circle');
+    base.setAttribute('cx',100); base.setAttribute('cy',88); base.setAttribute('r',52);
+  } else if (shape === 'hex') {
+    base = document.createElementNS(svg.namespaceURI,'polygon');
+    const pts=[]; const cx=100, cy=88, r=52;
+    for(let a=0;a<6;a++){ const ang=Math.PI/3*a - Math.PI/6; pts.push((cx+Math.cos(ang)*r)+','+(cy+Math.sin(ang)*r)); }
+    base.setAttribute('points',pts.join(' '));
+  } else if (shape === 'triangle') {
+    base = document.createElementNS(svg.namespaceURI,'polygon');
+    base.setAttribute('points','100,30 40,140 160,140');
+  } else {
+    base = document.createElementNS(svg.namespaceURI,'rect');
+    base.setAttribute('x',48); base.setAttribute('y',36); base.setAttribute('width',104); base.setAttribute('height',104); base.setAttribute('rx',18);
+  }
+  base.setAttribute('fill', pal[0]);
+  base.setAttribute('stroke','#00000020');
+  base.setAttribute('stroke-width',1);
+  svg.appendChild(base);
 
-      // Lights
-      const ambient = new THREE.AmbientLight(0xffffff, 0.45);
-      scene.add(ambient);
-
-      const dir = new THREE.DirectionalLight(0xffffff, 0.8);
-      dir.position.set(30, 50, 20);
-      scene.add(dir);
-
-      const rim = new THREE.PointLight(0x88bbff, 0.6, 200);
-      rim.position.set(-40, -10, 40);
-      scene.add(rim);
-
-      // Controls
-      controls = new OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.08;
-      controls.minDistance = 20;
-      controls.maxDistance = 300;
-
-      // Ground-ish subtle grid (optional)
-      const grid = new THREE.GridHelper(400, 40, 0x111122, 0x08080a);
-      grid.material.opacity = 0.06;
-      grid.material.transparent = true;
-      scene.add(grid);
-
-      // Materials & geometries
-      const mats = [
-        new THREE.MeshStandardMaterial({ color: 0xff6b6b, metalness: 0.7, roughness: 0.25 }),
-        new THREE.MeshStandardMaterial({ color: 0x6bcf6b, metalness: 0.6, roughness: 0.2 }),
-        new THREE.MeshStandardMaterial({ color: 0x4d96ff, metalness: 0.8, roughness: 0.25 }),
-        new THREE.MeshStandardMaterial({ color: 0xc77dff, metalness: 0.9, roughness: 0.3 }),
-      ];
-
-      const geos = [
-        new THREE.TorusGeometry(6, 1.6, 16, 100),
-        new THREE.SphereGeometry(3.6, 32, 32),
-        new THREE.BoxGeometry(6, 6, 6),
-        new THREE.OctahedronGeometry(4, 0),
-        new THREE.ConeGeometry(4, 8, 24),
-        new THREE.TorusKnotGeometry(3.5, 0.8, 120, 16)
-      ];
-
-      // Create random shapes
-      for (let i = 0; i < 28; i++) {
-        const g = geos[Math.floor(Math.random() * geos.length)];
-        const m = mats[Math.floor(Math.random() * mats.length)];
-        const mesh = new THREE.Mesh(g, m);
-
-        mesh.position.set(
-          (Math.random() - 0.5) * 120,
-          (Math.random() - 0.5) * 60,
-          (Math.random() - 0.5) * 120
-        );
-
-        mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
-        mesh.scale.setScalar(0.7 + Math.random() * 1.6);
-
-        scene.add(mesh);
-        shapes.push(mesh);
-      }
-
-      // subtle fog for depth
-      scene.fog = new THREE.FogExp2(0x00000a, 0.0025);
-
-      // handle resize
-      window.addEventListener('resize', onWindowResize);
+  // accent
+  if (accent === 'slash') {
+    const sl = document.createElementNS(svg.namespaceURI,'rect');
+    sl.setAttribute('x',30); sl.setAttribute('y',80); sl.setAttribute('width',140); sl.setAttribute('height',18);
+    sl.setAttribute('transform','rotate(-20 100 89)');
+    sl.setAttribute('fill', pal[1]);
+    sl.setAttribute('opacity',0.95);
+    svg.appendChild(sl);
+  } else if (accent === 'dots') {
+    for(let i=0;i<5;i++){
+      const d = document.createElementNS(svg.namespaceURI,'circle');
+      d.setAttribute('cx',70 + i*18); d.setAttribute('cy',120 + (i%2?6:0)); d.setAttribute('r',6);
+      d.setAttribute('fill', pal[1]);
+      svg.appendChild(d);
     }
+  } else { // ring
+    const ring = document.createElementNS(svg.namespaceURI,'circle');
+    ring.setAttribute('cx',100); ring.setAttribute('cy',88); ring.setAttribute('r',72);
+    ring.setAttribute('fill','none'); ring.setAttribute('stroke',pal[1]); ring.setAttribute('stroke-width',6); ring.setAttribute('opacity',0.18);
+    svg.appendChild(ring);
+  }
 
-    function onWindowResize() {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    }
+  // small monogram text (initials)
+  const txt = document.createElementNS(svg.namespaceURI,'text');
+  txt.setAttribute('x',100); txt.setAttribute('y',105); txt.setAttribute('text-anchor','middle');
+  txt.setAttribute('font-size',40); txt.setAttribute('font-family','Segoe UI,Arial'); txt.setAttribute('fill','#ffffff');
+  txt.setAttribute('font-weight','700');
+  txt.textContent = 'PR'; // change here to project initials programmatically if you want
+  svg.appendChild(txt);
+}
 
-    function animate() {
-      requestAnimationFrame(animate);
-      // rotate shapes gently
-      for (let i = 0; i < shapes.length; i++) {
-        const s = shapes[i];
-        s.rotation.x += 0.002 + (i % 3) * 0.0005;
-        s.rotation.y += 0.003 + (i % 4) * 0.0006;
-      }
-      scene.rotation.y += 0.0008; // slow scene rotation
-      controls.update();
-      renderer.render(scene, camera);
-    }
-  </script>
+// download helpers
+function downloadSVG() {
+  const serializer = new XMLSerializer();
+  let source = serializer.serializeToString(svg);
+  if(!source.match(/^<svg[^>]+xmlns="http:\/\/www\.w3\.org\/2000\/svg"/)){
+    source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+  }
+  const blob = new Blob([source], {type:'image/svg+xml;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'logo-variant.svg'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadPNG() {
+  // render SVG into canvas then download PNG
+  const serializer = new XMLSerializer();
+  let source = serializer.serializeToString(svg);
+  if(!source.match(/^<svg[^>]+xmlns="http:\/\/www\.w3\.org\/2000\/svg"/)){
+    source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+  }
+  const img = new Image();
+  const svg64 = btoa(unescape(encodeURIComponent(source)));
+  img.src = 'data:image/svg+xml;base64,' + svg64;
+  img.onload = function(){
+    const canvas = document.createElement('canvas');
+    canvas.width = 1200; canvas.height = 1200; // high-res export
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff00'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    // draw centered
+    ctx.drawImage(img, (canvas.width-300)/2, (canvas.height-300)/2, 300, 300);
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = 'logo-variant.png';
+    a.click();
+  };
+}
+
+document.getElementById('regen').addEventListener('click', draw);
+document.getElementById('downloadSvg').addEventListener('click', downloadSVG);
+document.getElementById('downloadPng').addEventListener('click', downloadPNG);
+
+// init
+draw();
+</script>
 </body>
 </html>
