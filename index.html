@@ -4,54 +4,105 @@
   <meta charset="utf-8">
   <title>Elephant Build Animation</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.js"></script>
-  <style>body{margin:0; background:#222;} canvas{display:block; margin:0 auto;}</style>
+  <style>
+    body {margin:0; background:#222; display:flex; flex-direction:column; align-items:center; color:white; font-family:sans-serif;}
+    canvas {margin-top:12px; border:2px solid #444;}
+    #controls {margin-top:12px;}
+    button, select {margin-right:8px; padding:6px 10px;}
+  </style>
 </head>
 <body>
+  <h2>Elephant Build Animation</h2>
+  <div id="controls">
+    <select id="mode">
+      <option value="random">Random</option>
+      <option value="top">Top-to-Bottom</option>
+      <option value="spiral">Spiral</option>
+    </select>
+    <button id="downloadBtn">Download PNG</button>
+  </div>
+
 <script>
 let img;
 let pixelsToDraw = [];
-let step = 3000; // pixels per frame
+let step = 3000;
+let mode = 'random';
 let imgLoaded = false;
 
 function preload() {
-  // ⚠️ Use a same-origin image (local file or CORS-enabled URL)
-  img = loadImage('elephant.png', ()=>{ imgLoaded = true; });
+  // CORS-enabled elephant image
+  img = loadImage('https://upload.wikimedia.org/wikipedia/commons/3/37/African_Bush_Elephant.jpg', ()=>{
+    imgLoaded = true;
+  });
 }
 
 function setup() {
   if(!imgLoaded){
     createCanvas(400,400);
     background(0);
-    textSize(20);
-    fill(255);
-    textAlign(CENTER,CENTER);
-    text("Image not loaded", width/2, height/2);
+    fill(255); textAlign(CENTER,CENTER); text("Image not loaded", width/2, height/2);
     noLoop();
     return;
   }
-
-  createCanvas(img.width, img.height);
+  createCanvas(img.width/2, img.height/2); // smaller for faster animation
+  img.resize(width, height);
   img.loadPixels();
-
-  for(let x=0; x<img.width; x++){
-    for(let y=0; y<img.height; y++){
-      let c = img.get(x,y);
-      if(alpha(c) > 0) pixelsToDraw.push({x:x, y:y, color:c});
-    }
-  }
+  preparePixels();
   background(34);
   frameRate(60);
+
+  // Control events
+  document.getElementById('mode').addEventListener('change', e=>{
+    mode = e.target.value;
+    preparePixels(); background(34); loop();
+  });
+  document.getElementById('downloadBtn').addEventListener('click', ()=>{
+    saveCanvas('elephant_build','png');
+  });
+}
+
+function preparePixels(){
+  pixelsToDraw = [];
+  if(mode==='random'){
+    for(let x=0;x<img.width;x++){
+      for(let y=0;y<img.height;y++){
+        let c = img.get(x,y);
+        if(alpha(c)>0) pixelsToDraw.push({x:x, y:y, color:c});
+      }
+    }
+  } else if(mode==='top'){
+    for(let y=0;y<img.height;y++){
+      for(let x=0;x<img.width;x++){
+        let c = img.get(x,y);
+        if(alpha(c)>0) pixelsToDraw.push({x:x, y:y, color:c});
+      }
+    }
+  } else if(mode==='spiral'){
+    let cx = floor(img.width/2);
+    let cy = floor(img.height/2);
+    let maxR = sqrt(cx*cx + cy*cy);
+    let arr = [];
+    for(let x=0;x<img.width;x++){
+      for(let y=0;y<img.height;y++){
+        let c = img.get(x,y);
+        if(alpha(c)>0) arr.push({x:x, y:y, color:c, r:dist(x,y,cx,cy)});
+      }
+    }
+    arr.sort((a,b)=>a.r-b.r);
+    pixelsToDraw = arr;
+  }
 }
 
 function draw() {
-  for(let i=0; i<step && pixelsToDraw.length>0; i++){
-    let idx = floor(random(pixelsToDraw.length));
+  if(pixelsToDraw.length==0){
+    noLoop(); return;
+  }
+
+  for(let i=0;i<step && pixelsToDraw.length>0;i++){
+    let idx = mode==='random'? floor(random(pixelsToDraw.length)) : 0;
     let p = pixelsToDraw.splice(idx,1)[0];
     stroke(p.color);
     point(p.x,p.y);
-  }
-  if(pixelsToDraw.length == 0){
-    noLoop();
   }
 }
 </script>
