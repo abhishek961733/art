@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Abstract Art Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.js"></script>
+  </head>
+  <body>
+    <script>
+      function setup() {
+        createCanvas(windowWidth, windowHeight);
+        noLoop(); // stop after one draw (can remove for continuous)
+        noStroke();
+      }
+
+      function draw() {
+        background(random(50, 100), random(50, 100), random(50, 100));
+
+        for (let i = 0; i < 200; i++) {
+          let x = random(width);
+          let y = random(height);
+          let size = random(20, 200);
+          fill(random(255), random(255), random(255), random(150, 255));
+          push();
+          translate(x, y);
+          rotate(random(TWO_PI));
+          beginShape();
+          for (let j = 0; j < 6; j++) {
+            let angle = TWO_PI / 6 * j;
+            let r = size / 2 + random(-20, 20);
+            let sx = cos(angle) * r;
+            let sy = sin(angle) * r;
+            vertex(sx, sy);
+          }
+          endShape(CLOSE);
+          pop();
+        }
+      }
+
+      function mousePressed() {
+        redraw(); // click to generate new pattern
+      }
+    </script>
+  </body>
+</html>
