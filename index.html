@@ -3,43 +3,87 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Abstract Art Generator</title>
+    <title>Animated Abstract Art</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.js"></script>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: radial-gradient(circle at center, #101020, #000010);
+      }
+      h2 {
+        position: absolute;
+        top: 10px;
+        left: 20px;
+        color: white;
+        font-family: 'Poppins', sans-serif;
+        letter-spacing: 2px;
+      }
+    </style>
   </head>
   <body>
+    <h2>🌈 Animated Abstract Art</h2>
+
     <script>
+      let shapes = [];
+
       function setup() {
         createCanvas(windowWidth, windowHeight);
-        noLoop(); // stop after one draw (can remove for continuous)
         noStroke();
-      }
-
-      function draw() {
-        background(random(50, 100), random(50, 100), random(50, 100));
-
-        for (let i = 0; i < 200; i++) {
-          let x = random(width);
-          let y = random(height);
-          let size = random(20, 200);
-          fill(random(255), random(255), random(255), random(150, 255));
-          push();
-          translate(x, y);
-          rotate(random(TWO_PI));
-          beginShape();
-          for (let j = 0; j < 6; j++) {
-            let angle = TWO_PI / 6 * j;
-            let r = size / 2 + random(-20, 20);
-            let sx = cos(angle) * r;
-            let sy = sin(angle) * r;
-            vertex(sx, sy);
-          }
-          endShape(CLOSE);
-          pop();
+        for (let i = 0; i < 60; i++) {
+          shapes.push(new MovingShape());
         }
       }
 
-      function mousePressed() {
-        redraw(); // click to generate new pattern
+      function draw() {
+        background(0, 20); // gives trail effect
+        for (let s of shapes) {
+          s.move();
+          s.display();
+        }
+      }
+
+      class MovingShape {
+        constructor() {
+          this.x = random(width);
+          this.y = random(height);
+          this.size = random(40, 150);
+          this.col = color(random(255), random(255), random(255), 180);
+          this.xSpeed = random(-2, 2);
+          this.ySpeed = random(-2, 2);
+          this.type = random(['circle', 'square', 'triangle']);
+        }
+
+        move() {
+          this.x += this.xSpeed;
+          this.y += this.ySpeed;
+
+          // bounce at edges
+          if (this.x < 0 || this.x > width) this.xSpeed *= -1;
+          if (this.y < 0 || this.y > height) this.ySpeed *= -1;
+        }
+
+        display() {
+          fill(this.col);
+          if (this.type === 'circle') {
+            ellipse(this.x, this.y, this.size);
+          } else if (this.type === 'square') {
+            rect(this.x, this.y, this.size, this.size);
+          } else {
+            triangle(
+              this.x,
+              this.y - this.size / 2,
+              this.x - this.size / 2,
+              this.y + this.size / 2,
+              this.x + this.size / 2,
+              this.y + this.size / 2
+            );
+          }
+        }
+      }
+
+      function windowResized() {
+        resizeCanvas(windowWidth, windowHeight);
       }
     </script>
   </body>
