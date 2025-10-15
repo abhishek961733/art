@@ -2,44 +2,47 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Photo Build Animation</title>
+  <title>Elephant Build Animation</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.js"></script>
+  <style>body{margin:0; background:#222;} canvas{display:block; margin:0 auto;}</style>
 </head>
 <body>
 <script>
 let img;
 let pixelsToDraw = [];
-let step = 500; // pixels per frame
+let step = 800; // pixels drawn per frame
 
 function preload() {
-  img = loadImage('https://i.imgur.com/2k0YxvF.png'); // logo/photo URL
+  // Replace this URL with your elephant image URL
+  img = loadImage('https://i.imgur.com/J0uXy3f.png'); 
 }
 
 function setup() {
   createCanvas(img.width, img.height);
   img.loadPixels();
-  
-  // save all pixels into array
-  for(let x=0;x<img.width;x++){
-    for(let y=0;y<img.height;y++){
-      let c = img.get(x,y);
-      pixelsToDraw.push({x:x, y:y, color:c});
+
+  // Store all pixels with position and color
+  for(let x = 0; x < img.width; x++){
+    for(let y = 0; y < img.height; y++){
+      let c = img.get(x, y);
+      // Skip fully transparent pixels (optional)
+      if (alpha(c) > 0) pixelsToDraw.push({x: x, y: y, color: c});
     }
   }
-  
+
+  background(34); // dark background
   frameRate(60);
-  background(255);
 }
 
 function draw() {
-  for(let i=0;i<step && pixelsToDraw.length>0;i++){
+  for(let i=0; i<step && pixelsToDraw.length>0; i++){
     let idx = floor(random(pixelsToDraw.length));
     let p = pixelsToDraw.splice(idx,1)[0];
     stroke(p.color);
-    point(p.x,p.y);
+    point(p.x, p.y);
   }
-  
-  if(pixelsToDraw.length==0){
+
+  if(pixelsToDraw.length == 0){
     noLoop(); // stop animation when done
   }
 }
