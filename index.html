@@ -2,109 +2,145 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Elephant Build Animation</title>
+  <title>Zama Community Hub</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.js"></script>
   <style>
-    body {margin:0; background:#222; display:flex; flex-direction:column; align-items:center; color:white; font-family:sans-serif;}
-    canvas {margin-top:12px; border:2px solid #444;}
-    #controls {margin-top:12px;}
-    button, select {margin-right:8px; padding:6px 10px;}
+    body {margin:0; font-family:sans-serif; background:#1a1a1a; color:#eee; display:flex; flex-direction:column; align-items:center; padding:10px;}
+    h1 {color:#FF6B6B;}
+    .section {margin:15px; padding:15px; border:2px solid #444; border-radius:10px; width:90%; max-width:600px; background:#222;}
+    button, select, input {margin:5px; padding:6px 10px; border-radius:5px; border:none; cursor:pointer;}
+    canvas{border:2px solid #444; margin-top:10px;}
   </style>
 </head>
 <body>
-  <h2>Elephant Build Animation</h2>
-  <div id="controls">
-    <select id="mode">
-      <option value="random">Random</option>
-      <option value="top">Top-to-Bottom</option>
-      <option value="spiral">Spiral</option>
-    </select>
-    <button id="downloadBtn">Download PNG</button>
-  </div>
+<h1>Zama Community Hub</h1>
+
+<!-- 1️⃣ Quiz Tool -->
+<div class="section" id="quizSection">
+  <h2>Zama Quiz</h2>
+  <div id="quiz"></div>
+  <button onclick="checkAnswer()">Submit Answer</button>
+  <div id="score"></div>
+</div>
+
+<!-- 2️⃣ Logo / Art Generator -->
+<div class="section">
+  <h2>Zama Logo Generator</h2>
+  <canvas id="logoCanvas" width="300" height="300"></canvas>
+  <select id="shape">
+    <option value="circle">Circle</option>
+    <option value="hex">Hexagon</option>
+    <option value="triangle">Triangle</option>
+  </select>
+  <select id="palette">
+    <option value="warm">Warm</option>
+    <option value="cool">Cool</option>
+  </select>
+  <button onclick="drawLogo()">Generate Logo</button>
+</div>
+
+<!-- 3️⃣ Random Fact / Tip -->
+<div class="section">
+  <h2>Zama Fact Generator</h2>
+  <div id="fact"></div>
+  <button onclick="newFact()">Show Fact</button>
+</div>
+
+<!-- 4️⃣ Poll / Vote -->
+<div class="section">
+  <h2>Vote Your Favorite Zama Feature</h2>
+  <label><input type="radio" name="vote" value="Perps Dex">Perps Dex</label>
+  <label><input type="radio" name="vote" value="AI Tools">AI Tools</label>
+  <label><input type="radio" name="vote" value="Community Quests">Community Quests</label>
+  <button onclick="submitVote()">Vote</button>
+  <div id="pollResult"></div>
+</div>
+
+<!-- 5️⃣ Countdown Timer -->
+<div class="section">
+  <h2>Next Zama Update</h2>
+  <div id="timer"></div>
+</div>
 
 <script>
-let img;
-let pixelsToDraw = [];
-let step = 3000;
-let mode = 'random';
-let imgLoaded = false;
-
-function preload() {
-  // CORS-enabled elephant image
-  img = loadImage('https://upload.wikimedia.org/wikipedia/commons/3/37/African_Bush_Elephant.jpg', ()=>{
-    imgLoaded = true;
+/* --------- 1️⃣ Quiz Tool --------- */
+let questions = [
+  {q:"What is Zama?", options:["AI Project","Crypto Dex"], answer:1},
+  {q:"Which feature is Perps Dex?", options:["Trading","Gaming"], answer:0}
+];
+function renderQuiz(){
+  let html = "";
+  questions.forEach((ques,i)=>{
+    html += `<p>${i+1}. ${ques.q}</p>`;
+    ques.options.forEach((opt,j)=>{
+      html += `<label><input type="radio" name="q${i}" value="${j}"> ${opt}</label><br>`;
+    });
   });
+  document.getElementById("quiz").innerHTML = html;
 }
-
-function setup() {
-  if(!imgLoaded){
-    createCanvas(400,400);
-    background(0);
-    fill(255); textAlign(CENTER,CENTER); text("Image not loaded", width/2, height/2);
-    noLoop();
-    return;
-  }
-  createCanvas(img.width/2, img.height/2); // smaller for faster animation
-  img.resize(width, height);
-  img.loadPixels();
-  preparePixels();
-  background(34);
-  frameRate(60);
-
-  // Control events
-  document.getElementById('mode').addEventListener('change', e=>{
-    mode = e.target.value;
-    preparePixels(); background(34); loop();
+function checkAnswer(){
+  let score=0;
+  questions.forEach((ques,i)=>{
+    let val = document.querySelector(`input[name="q${i}"]:checked`);
+    if(val && parseInt(val.value) === ques.answer) score++;
   });
-  document.getElementById('downloadBtn').addEventListener('click', ()=>{
-    saveCanvas('elephant_build','png');
-  });
+  document.getElementById("score").innerText = `Score: ${score} / ${questions.length}`;
+}
+renderQuiz();
+
+/* --------- 2️⃣ Logo Generator --------- */
+let canvas = document.getElementById("logoCanvas");
+let ctx = canvas.getContext("2d");
+function drawLogo(){
+  let shape = document.getElementById("shape").value;
+  let palette = document.getElementById("palette").value;
+  let colors = palette === "warm" ? ["#FF6B6B","#FFD93D","#6BCB77"] : ["#4D96FF","#28C7A9","#C77DFF"];
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle = colors[0];
+  ctx.strokeStyle = colors[1];
+  ctx.lineWidth = 5;
+  let cx = canvas.width/2, cy = canvas.height/2;
+  let size = 100;
+  if(shape==="circle") ctx.beginPath(), ctx.arc(cx,cy,size,0,2*Math.PI), ctx.fill(), ctx.stroke();
+  if(shape==="triangle") ctx.beginPath(), ctx.moveTo(cx,cy-size), ctx.lineTo(cx-size,cy+size), ctx.lineTo(cx+size,cy+size), ctx.closePath(), ctx.fill(), ctx.stroke();
+  if(shape==="hex") { ctx.beginPath(); for(let i=0;i<6;i++){ let angle=Math.PI/3*i; let x=cx+size*Math.cos(angle), y=cy+size*Math.sin(angle); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); } ctx.closePath(); ctx.fill(); ctx.stroke();}
+  ctx.fillStyle = colors[2]; ctx.font="40px sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText("Z",cx,cy);
 }
 
-function preparePixels(){
-  pixelsToDraw = [];
-  if(mode==='random'){
-    for(let x=0;x<img.width;x++){
-      for(let y=0;y<img.height;y++){
-        let c = img.get(x,y);
-        if(alpha(c)>0) pixelsToDraw.push({x:x, y:y, color:c});
-      }
-    }
-  } else if(mode==='top'){
-    for(let y=0;y<img.height;y++){
-      for(let x=0;x<img.width;x++){
-        let c = img.get(x,y);
-        if(alpha(c)>0) pixelsToDraw.push({x:x, y:y, color:c});
-      }
-    }
-  } else if(mode==='spiral'){
-    let cx = floor(img.width/2);
-    let cy = floor(img.height/2);
-    let maxR = sqrt(cx*cx + cy*cy);
-    let arr = [];
-    for(let x=0;x<img.width;x++){
-      for(let y=0;y<img.height;y++){
-        let c = img.get(x,y);
-        if(alpha(c)>0) arr.push({x:x, y:y, color:c, r:dist(x,y,cx,cy)});
-      }
-    }
-    arr.sort((a,b)=>a.r-b.r);
-    pixelsToDraw = arr;
-  }
+/* --------- 3️⃣ Fact Generator --------- */
+let facts = [
+  "Zama's Perps Dex is fully decentralized.",
+  "Zama integrates AI tools for smarter trading.",
+  "Community Quests give points and rewards."
+];
+function newFact(){
+  document.getElementById("fact").innerText = facts[Math.floor(Math.random()*facts.length)];
+}
+newFact();
+
+/* --------- 4️⃣ Poll / Vote --------- */
+let votes=[0,0,0]; // perps, AI, quests
+function submitVote(){
+  let val = document.querySelector('input[name="vote"]:checked');
+  if(!val){ alert("Select an option!"); return; }
+  let idx = ["Perps Dex","AI Tools","Community Quests"].indexOf(val.value);
+  votes[idx]++;
+  document.getElementById("pollResult").innerText = `Votes: Perps Dex=${votes[0]}, AI Tools=${votes[1]}, Community Quests=${votes[2]}`;
 }
 
-function draw() {
-  if(pixelsToDraw.length==0){
-    noLoop(); return;
-  }
+/* --------- 5️⃣ Countdown Timer --------- */
+let endTime = new Date("2025-12-20T00:00:00").getTime();
+setInterval(()=>{
+  let now = new Date().getTime();
+  let diff = endTime - now;
+  if(diff<0){ document.getElementById("timer").innerText="Update Released!"; return; }
+  let days = Math.floor(diff/(1000*60*60*24));
+  let hrs = Math.floor((diff%(1000*60*60*24))/(1000*60*60));
+  let mins = Math.floor((diff%(1000*60*60))/(1000*60));
+  let secs = Math.floor((diff%(1000*60))/1000);
+  document.getElementById("timer").innerText=`${days}d ${hrs}h ${mins}m ${secs}s left`;
+},1000);
 
-  for(let i=0;i<step && pixelsToDraw.length>0;i++){
-    let idx = mode==='random'? floor(random(pixelsToDraw.length)) : 0;
-    let p = pixelsToDraw.splice(idx,1)[0];
-    stroke(p.color);
-    point(p.x,p.y);
-  }
-}
 </script>
 </body>
 </html>
