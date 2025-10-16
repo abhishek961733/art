@@ -1,174 +1,690 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rialo Meme Generator</title>
-
-<!-- Font & Style -->
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Advanced Meme Generator v2 — Rialo</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Impact&family=Montserrat:wght@600;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 <style>
-  body {
-    font-family: 'Poppins', sans-serif;
-    background: linear-gradient(135deg, #1c1f4a, #2b2f6c, #141624);
-    color: #fff;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: start;
-    min-height: 100vh;
-    padding: 20px;
+  :root{
+    --bg:#0b1020; --card:#0e1530; --muted:#9aa6b2; --accent1:#6ee7b7; --glass: rgba(255,255,255,0.03);
   }
-
-  h1 {
-    font-size: 2.2em;
-    background: linear-gradient(90deg, #00ffe0, #00bfff);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin-bottom: 10px;
-  }
-
-  .container {
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(8px);
-    padding: 25px;
-    border-radius: 20px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-    width: 95%;
-    max-width: 500px;
-    text-align: center;
-    animation: fadeIn 0.6s ease-in-out;
-  }
-
-  input[type="file"], input[type="text"] {
-    width: 90%;
-    margin: 10px 0;
-    padding: 10px;
-    border-radius: 10px;
-    border: none;
-    outline: none;
-    font-size: 1em;
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
-  }
-
-  canvas {
-    width: 100%;
-    border-radius: 15px;
-    margin-top: 15px;
-    background: #000;
-  }
-
-  button {
-    background: linear-gradient(90deg, #00bfff, #0077ff);
-    color: white;
-    border: none;
-    border-radius: 12px;
-    padding: 12px 24px;
-    margin-top: 15px;
-    font-size: 1em;
-    cursor: pointer;
-    transition: 0.3s;
-  }
-
-  button:hover {
-    background: linear-gradient(90deg, #00ffe0, #00bfff);
-    transform: scale(1.05);
-  }
-
-  @keyframes fadeIn {
-    from {opacity: 0; transform: translateY(20px);}
-    to {opacity: 1; transform: translateY(0);}
-  }
-
-  footer {
-    margin-top: 25px;
-    color: #999;
-    font-size: 0.9em;
-  }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;background:linear-gradient(180deg,#07102a,#091026);color:#fff;font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;}
+  .wrap{max-width:1200px;margin:18px auto;padding:18px;display:grid;grid-template-columns:1fr 360px;gap:18px}
+  .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:14px;border-radius:14px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 10px 40px rgba(2,6,23,0.6)}
+  header{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+  .logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(90deg,#7c3aed,#06b6d4);display:flex;align-items:center;justify-content:center;font-weight:700;font-family:Anton;color:#fff;font-size:26px}
+  h1{margin:0;font-size:18px}
+  p.lead{margin:0;color:var(--muted);font-size:13px}
+  .controls{display:flex;flex-direction:column;gap:10px;padding-top:8px}
+  .row{display:flex;gap:8px;align-items:center}
+  label{font-size:13px;color:var(--muted);min-width:110px}
+  input[type="text"], select, input[type="number"]{padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03);color:#fff}
+  input[type="color"]{width:48px;height:36px;border-radius:8px;border:none;padding:0}
+  button.btn{padding:8px 12px;border-radius:10px;border:none;background:linear-gradient(90deg,#06b6d4,#7c3aed);color:#fff;cursor:pointer}
+  button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
+  .canvas-area{display:flex;flex-direction:column;align-items:center;gap:8px}
+  canvas{background:#000;border-radius:12px;max-width:100%;box-shadow:0 10px 30px rgba(2,6,23,0.6)}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap}
+  .small{font-size:12px;color:var(--muted)}
+  .panel{display:flex;flex-direction:column;gap:8px}
+  .layers{display:flex;flex-direction:column;gap:6px}
+  .layer-item{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;background:rgba(255,255,255,0.01)}
+  .layer-item.active{outline:2px solid rgba(99,102,241,0.16)}
+  .stickers{display:flex;gap:6px;flex-wrap:wrap}
+  .sticker-btn{padding:6px 8px;border-radius:8px;border:none;background:rgba(255,255,255,0.02);cursor:pointer;font-size:20px}
+  .gallery{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .thumb{width:86px;height:48px;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,0.03);cursor:pointer}
+  footer{grid-column:1/-1;text-align:center;color:var(--muted);margin-top:12px;font-size:13px}
+  @media(max-width:980px){.wrap{grid-template-columns:1fr;padding:12px}.right{position:static}}
 </style>
 </head>
 <body>
+  <div class="wrap">
+    <div class="card">
+      <header>
+        <div class="logo">R</div>
+        <div>
+          <h1>Advanced Meme Generator v2</h1>
+          <p class="lead">Upload, style, add stickers & download — share-ready memes (gallery saved locally).</p>
+        </div>
+      </header>
 
-<h1>🔥 Rialo Meme Generator</h1>
-<div class="container">
-  <p>Create your meme and share it with your community!</p>
+      <div class="toolbar" style="margin-bottom:8px">
+        <label class="btn ghost" id="uploadLabel">Upload Image
+          <input id="imgUpload" type="file" accept="image/*" style="display:none">
+        </label>
+        <button class="btn ghost" id="clearBtn">Clear</button>
+        <button class="btn" id="addTextTop">Add Top Text</button>
+        <button class="btn" id="addTextBottom">Add Bottom Text</button>
+        <button class="btn" id="addSticker">Add Sticker</button>
+        <select id="templateSelect" style="border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03);color:#fff;padding:8px">
+          <option value="none">Template: None (use image)</option>
+          <option value="solid">Template: Solid Color</option>
+          <option value="gradient">Template: Gradient</option>
+          <option value="twoPanel">Template: Two Panel</option>
+        </select>
+      </div>
 
-  <input type="file" id="imageUpload" accept="image/*">
-  <input type="text" id="topText" placeholder="Top text">
-  <input type="text" id="bottomText" placeholder="Bottom text">
-  <button id="generateBtn">Generate Meme</button>
-  <canvas id="memeCanvas"></canvas>
-  <button id="downloadBtn">Download Meme</button>
-</div>
+      <div class="canvas-area">
+        <div style="width:100%;display:flex;gap:10px;align-items:center;justify-content:space-between">
+          <div class="small">Tip: Drag text or stickers to position. Double-click canvas to add text.</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <label class="small">Export:</label>
+            <select id="exportScale" style="padding:6px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03)">
+              <option value="1">1×</option>
+              <option value="2">2× (HD)</option>
+              <option value="3">3× (Print)</option>
+            </select>
+          </div>
+        </div>
 
-<footer>⚡ Powered by Rialo Community</footer>
+        <canvas id="mainCanvas" width="1000" height="600"></canvas>
 
-<!-- JS Logic -->
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn" id="downloadBtn">Download PNG</button>
+          <button class="btn" id="copyBtn">Copy to Clipboard</button>
+          <button class="btn" id="shareBtn">Share to X</button>
+          <button class="btn ghost" id="saveGallery">Save to Gallery</button>
+        </div>
+
+        <div class="small" id="statusText" style="opacity:0.9;margin-top:6px;color:var(--muted)"></div>
+      </div>
+    </div>
+
+    <aside class="card right" style="position:sticky;top:20px;height:calc(100vh - 40px);overflow:auto">
+      <div style="font-weight:700">Layer Controls</div>
+      <div class="panel" style="margin-top:8px">
+        <div class="row">
+          <label>Selected</label>
+          <div id="selectedLabel" class="small">None</div>
+        </div>
+
+        <div class="row">
+          <label>Text</label>
+          <input type="text" id="layerText" placeholder="Edit text">
+        </div>
+
+        <div class="row">
+          <label>Font</label>
+          <select id="fontSelect">
+            <option value="Impact, Arial Black, sans-serif">Impact</option>
+            <option value="Anton, Impact, sans-serif">Anton</option>
+            <option value="Montserrat, sans-serif">Montserrat</option>
+            <option value="Poppins, sans-serif">Poppins</option>
+          </select>
+        </div>
+
+        <div class="row">
+          <label>Size</label>
+          <input type="range" id="fontSize" min="20" max="160" value="48">
+          <div class="small" id="fontSizeVal">48</div>
+        </div>
+
+        <div class="row">
+          <label>Gradient</label>
+          <input type="color" id="g1" value="#ffffff">
+          <input type="color" id="g2" value="#000000">
+          <select id="gdir" style="padding:6px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03)">
+            <option value="horizontal">Horizontal</option>
+            <option value="vertical">Vertical</option>
+            <option value="diag">Diagonal</option>
+          </select>
+        </div>
+
+        <div class="row">
+          <label>Stroke</label>
+          <input type="color" id="strokeColor" value="#000000">
+          <input type="number" id="strokeWidth" value="6" style="width:70px">
+        </div>
+
+        <div class="row">
+          <label>Opacity</label>
+          <input type="range" id="layerOpacity" min="0" max="100" value="100">
+          <div class="small" id="layerOpacityVal">100%</div>
+        </div>
+
+        <div class="row">
+          <label>Rotate</label>
+          <input type="range" id="rotate" min="-180" max="180" value="0">
+          <div class="small" id="rotateVal">0°</div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <button class="btn" id="applyBtn">Apply</button>
+          <button class="btn ghost" id="deleteLayer">Delete</button>
+        </div>
+
+        <div class="small" style="margin-top:8px;color:var(--muted)">Stickers</div>
+        <div class="stickers" id="stickerPanel">
+          <button class="sticker-btn" data-emoji="🔥">🔥</button>
+          <button class="sticker-btn" data-emoji="😂">😂</button>
+          <button class="sticker-btn" data-emoji="💀">💀</button>
+          <button class="sticker-btn" data-emoji="🚀">🚀</button>
+          <button class="sticker-btn" data-emoji="✨">✨</button>
+          <button class="sticker-btn" data-emoji="❤️">❤️</button>
+        </div>
+
+        <div class="small" style="margin-top:10px;color:var(--muted)">Templates</div>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button class="btn ghost" id="tplNone">None</button>
+          <button class="btn ghost" id="tplSolid">Solid</button>
+          <button class="btn ghost" id="tplGrad">Gradient</button>
+          <button class="btn ghost" id="tpl2pan">Two Panel</button>
+        </div>
+
+        <div class="nice-hr" style="height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.02),transparent);margin:12px 0"></div>
+
+        <div style="font-weight:700">Gallery</div>
+        <div class="gallery" id="gallery"></div>
+        <div class="small" style="color:var(--muted);margin-top:8px">Saved locally in your browser (last 8).</div>
+      </div>
+    </aside>
+
+    <footer>Made with ❤️ for Rialo community — Advanced Meme Generator v2</footer>
+  </div>
+
 <script>
-const imageUpload = document.getElementById('imageUpload');
-const topText = document.getElementById('topText');
-const bottomText = document.getElementById('bottomText');
-const canvas = document.getElementById('memeCanvas');
-const ctx = canvas.getContext('2d');
-const generateBtn = document.getElementById('generateBtn');
+/* ===================== State & Elements ===================== */
+const canvas = document.getElementById('mainCanvas');
+const ctx = canvas.getContext('2d', {alpha:true});
+const imgUpload = document.getElementById('imgUpload');
+const uploadLabel = document.getElementById('uploadLabel');
+const clearBtn = document.getElementById('clearBtn');
+const addTextTop = document.getElementById('addTextTop');
+const addTextBottom = document.getElementById('addTextBottom');
+const addStickerBtn = document.getElementById('addSticker');
+const templateSelect = document.getElementById('templateSelect');
 const downloadBtn = document.getElementById('downloadBtn');
+const copyBtn = document.getElementById('copyBtn');
+const shareBtn = document.getElementById('shareBtn');
+const saveGalleryBtn = document.getElementById('saveGallery');
+const statusText = document.getElementById('statusText');
 
-let uploadedImage = null;
+const selectedLabel = document.getElementById('selectedLabel');
+const layerText = document.getElementById('layerText');
+const fontSelect = document.getElementById('fontSelect');
+const fontSize = document.getElementById('fontSize');
+const fontSizeVal = document.getElementById('fontSizeVal');
+const g1 = document.getElementById('g1'), g2 = document.getElementById('g2'), gdir = document.getElementById('gdir');
+const strokeColor = document.getElementById('strokeColor'), strokeWidth = document.getElementById('strokeWidth');
+const layerOpacity = document.getElementById('layerOpacity'), layerOpacityVal = document.getElementById('layerOpacityVal');
+const rotate = document.getElementById('rotate'), rotateVal = document.getElementById('rotateVal');
+const applyBtn = document.getElementById('applyBtn'), deleteLayerBtn = document.getElementById('deleteLayer');
+const stickerPanel = document.getElementById('stickerPanel');
+const galleryEl = document.getElementById('gallery');
+const tplNone = document.getElementById('tplNone'), tplSolid = document.getElementById('tplSolid'), tplGrad = document.getElementById('tplGrad'), tpl2pan = document.getElementById('tpl2pan');
+const exportScale = document.getElementById('exportScale');
 
-// Load image
-imageUpload.addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    const img = new Image();
-    img.onload = () => {
-      uploadedImage = img;
-      canvas.width = img.width;
-      canvas.height = img.height;
-      drawMeme();
-    };
-    img.src = reader.result;
-  };
-  reader.readAsDataURL(file);
-});
+let baseImage = null; // Image object or null
+let templateMode = 'none';
 
-// Draw meme function
-function drawMeme() {
-  if (!uploadedImage) return;
-  ctx.drawImage(uploadedImage, 0, 0, canvas.width, canvas.height);
-  
-  // Text styles
-  ctx.font = `${Math.floor(canvas.width / 10)}px Impact`;
-  ctx.fillStyle = 'white';
-  ctx.strokeStyle = 'black';
-  ctx.lineWidth = 5;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
+let layers = []; // array of {id, type:'text'|'sticker', text, emoji, x,y, size, font, color1,color2, gdir, strokeColor, strokeWidth, opacity, rotate, draggable:true}
+let selectedId = null;
 
-  // Top Text
-  ctx.fillText(topText.value.toUpperCase(), canvas.width / 2, 10);
-  ctx.strokeText(topText.value.toUpperCase(), canvas.width / 2, 10);
-
-  // Bottom Text
-  ctx.textBaseline = 'bottom';
-  ctx.fillText(bottomText.value.toUpperCase(), canvas.width / 2, canvas.height - 10);
-  ctx.strokeText(bottomText.value.toUpperCase(), canvas.width / 2, canvas.height - 10);
+/* ========== Helpers ========== */
+function uid(){ return 'L'+Math.random().toString(36).slice(2,9); }
+function setStatus(msg, tm=2200){ statusText.textContent = msg; if(tm) setTimeout(()=>{ if(statusText.textContent===msg) statusText.textContent=''; }, tm); }
+function fitCanvasToWindow(){
+  // keep canvas aspect ratio 16:10 or based on image if present
+  const maxW = Math.min(window.innerWidth - 420, 1100);
+  const w = baseImage ? Math.min(baseImage.width, 1200) : Math.min(maxW, 1000);
+  const h = baseImage ? Math.min(baseImage.height, 800) : Math.round(w * 0.6);
+  canvas.width = w;
+  canvas.height = h;
+}
+function clearCanvas(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // background depending on template
+  if(templateMode==='solid'){ ctx.fillStyle='#0b1220'; ctx.fillRect(0,0,canvas.width,canvas.height); }
+  else if(templateMode==='gradient'){
+    const g = ctx.createLinearGradient(0,0,canvas.width,canvas.height);
+    g.addColorStop(0,'#0ea5e9'); g.addColorStop(1,'#7c3aed'); ctx.fillStyle=g; ctx.fillRect(0,0,canvas.width,canvas.height);
+  } else if(templateMode==='twoPanel'){
+    const g1 = ctx.createLinearGradient(0,0,canvas.width/2,canvas.height); g1.addColorStop(0,'#ff8a65'); g1.addColorStop(1,'#ffcc80');
+    ctx.fillStyle=g1; ctx.fillRect(0,0,canvas.width/2,canvas.height);
+    const g2 = ctx.createLinearGradient(canvas.width/2,0,canvas.width,canvas.height); g2.addColorStop(0,'#8f7ae5'); g2.addColorStop(1,'#06b6d4');
+    ctx.fillStyle=g2; ctx.fillRect(canvas.width/2,0,canvas.width/2,canvas.height);
+  } else {
+    // transparent / checker fallback
+    ctx.fillStyle = '#0b1220'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  }
+}
+function drawBaseImage(){
+  if(!baseImage) return;
+  const iw = baseImage.width, ih = baseImage.height;
+  const cw = canvas.width, ch = canvas.height;
+  // cover fit
+  const scale = Math.max(cw/iw, ch/ih);
+  const w = iw*scale, h = ih*scale;
+  const x = (cw - w)/2, y = (ch - h)/2;
+  ctx.globalAlpha = 1;
+  ctx.drawImage(baseImage, x, y, w, h);
 }
 
-// Generate meme button
-generateBtn.addEventListener('click', () => {
-  drawMeme();
+// draw each layer
+function drawLayer(l){
+  ctx.save();
+  ctx.translate(l.x, l.y);
+  ctx.rotate((l.rotate||0)*Math.PI/180);
+  ctx.globalAlpha = (l.opacity===undefined?1:l.opacity);
+  if(l.type==='text'){
+    // gradient fill
+    const fontSpec = `${l.size||48}px ${l.font||'Impact, Arial Black, sans-serif'}`;
+    ctx.font = fontSpec;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    // create gradient
+    let grad;
+    if(l.color2){
+      if(l.gdir==='vertical') grad = ctx.createLinearGradient(0,-l.size,0,l.size);
+      else if(l.gdir==='diag') grad = ctx.createLinearGradient(-l.size,-l.size,l.size,l.size);
+      else grad = ctx.createLinearGradient(-l.size,0,l.size,0);
+      grad.addColorStop(0,l.color1||'#fff'); grad.addColorStop(1,l.color2||'#000');
+    } else {
+      grad = l.color1 || '#fff';
+    }
+    // stroke
+    if(l.strokeWidth>0){
+      ctx.lineWidth = l.strokeWidth;
+      ctx.strokeStyle = l.strokeColor || '#000';
+      ctx.strokeText(l.text, 0, 0);
+    }
+    ctx.fillStyle = grad;
+    ctx.fillText(l.text, 0, 0);
+  } else if(l.type==='sticker'){
+    // draw emoji as text
+    const s = l.size || 64;
+    ctx.font = `${s}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(l.emoji, 0, 0);
+  }
+  ctx.restore();
+}
+
+function render(){
+  clearCanvas();
+  drawBaseImage();
+  // draw layers in order
+  layers.forEach(l => drawLayer(l));
+  // update selected label
+  selectedLabel.textContent = selectedId ? (selectedId) : 'None';
+}
+
+/* ======== Image Upload & Template ======= */
+imgUpload.addEventListener('change', (e)=>{
+  const f = e.target.files[0]; if(!f) return;
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      baseImage = img;
+      templateMode = 'none';
+      templateSelect.value = 'none';
+      fitCanvasToWindow();
+      // center default layers if empty
+      if(layers.length===0){
+        // optionally create default top/bottom
+      }
+      render();
+      setStatus('Image loaded');
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(f);
 });
 
-// Download meme
-downloadBtn.addEventListener('click', () => {
-  const link = document.createElement('a');
-  link.download = 'rialo-meme.png';
-  link.href = canvas.toDataURL('image/png');
-  link.click();
+// template select
+templateSelect.addEventListener('change', (e)=>{
+  templateMode = e.target.value || 'none';
+  if(templateMode!=='none') baseImage = null;
+  fitCanvasToWindow(); render();
 });
+tplNone.addEventListener('click', ()=>{ templateMode='none'; templateSelect.value='none'; baseImage=null; fitCanvasToWindow(); render(); });
+tplSolid.addEventListener('click', ()=>{ templateMode='solid'; templateSelect.value='solid'; baseImage=null; fitCanvasToWindow(); render(); });
+tplGrad.addEventListener('click', ()=>{ templateMode='gradient'; templateSelect.value='gradient'; baseImage=null; fitCanvasToWindow(); render(); });
+tpl2pan.addEventListener('click', ()=>{ templateMode='twoPanel'; templateSelect.value='twoPanel'; baseImage=null; fitCanvasToWindow(); render(); });
+
+clearBtn.addEventListener('click', ()=>{
+  baseImage = null;
+  imgUpload.value = '';
+  layers = [];
+  selectedId = null;
+  templateMode='none';
+  templateSelect.value='none';
+  fitCanvasToWindow(); render();
+});
+
+/* ===== Layers management ===== */
+function addTextLayer(text='New Text', x=null, y=null){
+  const id = uid();
+  const l = {
+    id, type:'text', text, x: x||canvas.width/2, y: y||canvas.height/2,
+    size: Math.round(canvas.width/10), font: fontSelect.value, color1:'#ffffff', color2:null, gdir:'horizontal',
+    strokeColor:'#000000', strokeWidth:6, opacity:1, rotate:0
+  };
+  layers.push(l); selectedId = id; populateControlsFromSelected(); render();
+}
+
+function addSticker(emoji='🔥', x=null, y=null){
+  const id = uid();
+  const l = { id, type:'sticker', emoji, x: x||canvas.width/2, y: y||canvas.height/2, size:80, opacity:1, rotate:0 };
+  layers.push(l); selectedId = id; populateControlsFromSelected(); render();
+}
+
+addTextTop.addEventListener('click', ()=> addTextLayer('TOP TEXT', canvas.width/2, canvas.height*0.12));
+addTextBottom.addEventListener('click', ()=> addTextLayer('BOTTOM TEXT', canvas.width/2, canvas.height*0.88));
+addStickerBtn.addEventListener('click', ()=> addSticker('🔥'));
+
+// sticker panel buttons
+stickerPanel.querySelectorAll('.sticker-btn').forEach(b=>{
+  b.addEventListener('click', ()=> addSticker(b.dataset.emoji));
+});
+
+// select layer by clicking list (we'll keep simple: click canvas to pick)
+/* ===== Interaction: select by clicking layer ===== */
+function getPointerPos(evt){
+  const rect = canvas.getBoundingClientRect();
+  const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+  const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+  const x = (clientX - rect.left) * (canvas.width / rect.width);
+  const y = (clientY - rect.top) * (canvas.height / rect.height);
+  return {x,y};
+}
+
+function findTopLayerAtPoint(x,y){
+  for(let i=layers.length-1;i>=0;i--){
+    const l = layers[i];
+    // rough bounding box
+    if(l.type==='text'){
+      ctx.save();
+      ctx.font = `${l.size}px ${l.font}`;
+      const w = ctx.measureText(l.text).width;
+      const h = l.size;
+      ctx.restore();
+      const angle = (l.rotate||0)*Math.PI/180;
+      const dx = x - l.x, dy = y - l.y;
+      const localX = dx * Math.cos(-angle) - dy * Math.sin(-angle);
+      const localY = dx * Math.sin(-angle) + dy * Math.cos(-angle);
+      let left= -w/2, right=w/2;
+      if(localX >= left-10 && localX <= right+10 && localY >= -h/2-8 && localY <= h/2+8) return l;
+    } else if(l.type==='sticker'){
+      const s = l.size;
+      if(Math.abs(x - l.x) <= s/1.1 && Math.abs(y - l.y) <= s/1.1) return l;
+    }
+  }
+  return null;
+}
+
+let dragging = false, dragLayer = null, dragOffset={x:0,y:0};
+canvas.addEventListener('mousedown', (e)=>{
+  const p = getPointerPos(e);
+  const hit = findTopLayerAtPoint(p.x,p.y);
+  if(hit){
+    selectedId = hit.id; dragLayer = hit; dragging = true;
+    dragOffset.x = p.x - hit.x; dragOffset.y = p.y - hit.y;
+    populateControlsFromSelected();
+    render();
+  } else {
+    selectedId = null; populateControlsFromSelected(); render();
+  }
+});
+window.addEventListener('mousemove', (e)=>{
+  if(!dragging || !dragLayer) return;
+  const p = getPointerPos(e);
+  dragLayer.x = p.x - dragOffset.x; dragLayer.y = p.y - dragOffset.y;
+  render();
+});
+window.addEventListener('mouseup', ()=>{ dragging=false; dragLayer=null; });
+
+// touch events
+canvas.addEventListener('touchstart', (e)=>{
+  const p = getPointerPos(e);
+  const hit = findTopLayerAtPoint(p.x,p.y);
+  if(hit){ selectedId = hit.id; dragLayer = hit; dragging=true; dragOffset.x = p.x - hit.x; dragOffset.y = p.y - hit.y; populateControlsFromSelected(); render(); }
+});
+window.addEventListener('touchmove', (e)=>{
+  if(!dragging || !dragLayer) return;
+  const p = getPointerPos(e);
+  dragLayer.x = p.x - dragOffset.x; dragLayer.y = p.y - dragOffset.y; render();
+});
+window.addEventListener('touchend', ()=>{ dragging=false; dragLayer=null; });
+
+canvas.addEventListener('dblclick', (e)=>{
+  const p = getPointerPos(e);
+  addTextLayer('Double Click Text', p.x, p.y);
+});
+
+/* ===== Controls sync ===== */
+function populateControlsFromSelected(){
+  const l = layers.find(x=>x.id===selectedId);
+  if(!l){
+    selectedLabel.textContent = 'None';
+    layerText.value = '';
+    fontSizeVal.textContent = fontSize.value;
+    layerOpacityVal.textContent = layerOpacity.value + '%';
+    rotateVal.textContent = rotate.value + '°';
+    return;
+  }
+  selectedLabel.textContent = l.id;
+  if(l.type==='text'){
+    layerText.value = l.text;
+    fontSelect.value = l.font || fontSelect.value;
+    fontSize.value = l.size || 48;
+    fontSizeVal.textContent = fontSize.value;
+    g1.value = l.color1 || '#ffffff';
+    g2.value = l.color2 || '#000000';
+    gdir.value = l.gdir || 'horizontal';
+    strokeColor.value = l.strokeColor || '#000000';
+    strokeWidth.value = l.strokeWidth || 4;
+    layerOpacity.value = Math.round((l.opacity||1)*100);
+    layerOpacityVal.textContent = layerOpacity.value + '%';
+    rotate.value = l.rotate || 0;
+    rotateVal.textContent = rotate.value + '°';
+  } else if(l.type==='sticker'){
+    layerText.value = l.emoji || '';
+    fontSize.value = l.size;
+    fontSizeVal.textContent = fontSize.value;
+    layerOpacity.value = Math.round((l.opacity||1)*100);
+    layerOpacityVal.textContent = layerOpacity.value + '%';
+    rotate.value = l.rotate || 0; rotateVal.textContent = rotate.value + '°';
+  }
+}
+
+fontSize.addEventListener('input', ()=>{ fontSizeVal.textContent = fontSize.value; });
+layerOpacity.addEventListener('input', ()=>{ layerOpacityVal.textContent = layerOpacity.value + '%'; });
+rotate.addEventListener('input', ()=>{ rotateVal.textContent = rotate.value + '°'; });
+
+applyBtn.addEventListener('click', ()=>{
+  const l = layers.find(x=>x.id===selectedId);
+  if(!l){ setStatus('No layer selected'); return; }
+  if(l.type==='text'){
+    l.text = layerText.value || l.text;
+    l.font = fontSelect.value;
+    l.size = parseInt(fontSize.value,10);
+    l.color1 = g1.value;
+    l.color2 = g2.value;
+    l.gdir = gdir.value;
+    l.strokeColor = strokeColor.value;
+    l.strokeWidth = parseInt(strokeWidth.value,10);
+    l.opacity = parseInt(layerOpacity.value,10)/100;
+    l.rotate = parseInt(rotate.value,10);
+  } else if(l.type==='sticker'){
+    l.emoji = layerText.value || l.emoji;
+    l.size = parseInt(fontSize.value,10);
+    l.opacity = parseInt(layerOpacity.value,10)/100;
+    l.rotate = parseInt(rotate.value,10);
+  }
+  render();
+});
+
+deleteLayerBtn.addEventListener('click', ()=>{
+  if(!selectedId) return setStatus('Select a layer first');
+  layers = layers.filter(x=>x.id!==selectedId);
+  selectedId = null; populateControlsFromSelected(); render();
+});
+
+/* ===== Download / Copy / Share / Gallery ===== */
+function exportCanvas(scale=1, callback){
+  const tmp = document.createElement('canvas');
+  tmp.width = canvas.width * scale; tmp.height = canvas.height * scale;
+  const tctx = tmp.getContext('2d');
+  // draw background & image & layers scaled
+  // background / template
+  if(templateMode==='solid'){ tctx.fillStyle='#0b1220'; tctx.fillRect(0,0,tmp.width,tmp.height); }
+  else if(templateMode==='gradient'){ const g = tctx.createLinearGradient(0,0,tmp.width,tmp.height); g.addColorStop(0,'#0ea5e9'); g.addColorStop(1,'#7c3aed'); tctx.fillStyle=g; tctx.fillRect(0,0,tmp.width,tmp.height); }
+  else if(templateMode==='twoPanel'){ const g1 = tctx.createLinearGradient(0,0,tmp.width/2,tmp.height); g1.addColorStop(0,'#ff8a65'); g1.addColorStop(1,'#ffcc80'); tctx.fillStyle=g1; tctx.fillRect(0,0,tmp.width/2,tmp.height); const g2 = tctx.createLinearGradient(tmp.width/2,0,tmp.width,tmp.height); g2.addColorStop(0,'#8f7ae5'); g2.addColorStop(1,'#06b6d4'); tctx.fillStyle=g2; tctx.fillRect(tmp.width/2,0,tmp.width/2,tmp.height); }
+  else { tctx.fillStyle='#0b1220'; tctx.fillRect(0,0,tmp.width,tmp.height); }
+
+  if(baseImage){
+    const iw = baseImage.width, ih = baseImage.height;
+    const cw = tmp.width, ch = tmp.height;
+    const scaleImg = Math.max(cw/iw, ch/ih);
+    const w = iw*scaleImg, h = ih*scaleImg;
+    const x = (cw-w)/2, y=(ch-h)/2;
+    tctx.drawImage(baseImage, x, y, w, h);
+  }
+
+  layers.forEach(l=>{
+    tctx.save(); tctx.translate(l.x*scale, l.y*scale); tctx.rotate((l.rotate||0)*Math.PI/180); tctx.globalAlpha = l.opacity||1;
+    if(l.type==='text'){
+      tctx.textAlign='center'; tctx.textBaseline='middle';
+      const fontSpec = `${(l.size||48)*scale}px ${l.font}`;
+      tctx.font = fontSpec;
+      let grad;
+      if(l.color2){
+        if(l.gdir==='vertical') grad = tctx.createLinearGradient(0,-l.size*scale,0,l.size*scale);
+        else if(l.gdir==='diag') grad = tctx.createLinearGradient(-l.size*scale,-l.size*scale,l.size*scale,l.size*scale);
+        else grad = tctx.createLinearGradient(-l.size*scale,0,l.size*scale,0);
+        grad.addColorStop(0,l.color1||'#fff'); grad.addColorStop(1,l.color2||'#000');
+      } else grad = l.color1||'#fff';
+      if(l.strokeWidth>0){
+        tctx.lineWidth = l.strokeWidth*scale;
+        tctx.strokeStyle = l.strokeColor||'#000';
+        tctx.strokeText(l.text, 0, 0);
+      }
+      tctx.fillStyle = grad; tctx.fillText(l.text, 0, 0);
+    } else if(l.type==='sticker'){
+      const s = (l.size||64)*scale;
+      tctx.font = `${s}px serif`; tctx.textAlign='center'; tctx.textBaseline='middle';
+      tctx.fillText(l.emoji, 0, 0);
+    }
+    tctx.restore();
+  });
+
+  tmp.toBlob(blob => {
+    callback(blob, tmp.toDataURL('image/png'));
+  }, 'image/png');
+}
+
+downloadBtn.addEventListener('click', ()=>{
+  const scale = parseInt(exportScale.value,10)||1;
+  exportCanvas(scale, (blob)=>{
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `rialo_meme_${Date.now()}.png`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setStatus('Downloaded PNG');
+  });
+});
+
+copyBtn.addEventListener('click', async ()=>{
+  try{
+    const scale = 2;
+    exportCanvas(scale, async (blob, dataUrl)=>{
+      // try clipboard write (requires secure context & permission)
+      if(navigator.clipboard && navigator.clipboard.write){
+        const item = new ClipboardItem({'image/png': blob});
+        await navigator.clipboard.write([item]);
+        setStatus('Image copied to clipboard — you can paste in chat or composer');
+      } else {
+        // fallback: open in new tab and ask user to save
+        const w = window.open();
+        w.document.body.style.margin='0';
+        const img = w.document.createElement('img'); img.src = dataUrl; img.style.width='100%'; w.document.title='Right click -> Save image';
+        w.document.body.appendChild(img);
+        setStatus('Clipboard not supported — opened image in new tab');
+      }
+    });
+  }catch(err){
+    console.error(err); setStatus('Copy to clipboard failed');
+  }
+});
+
+shareBtn.addEventListener('click', async ()=>{
+  // We'll export a medium image and attempt to copy to clipboard, then open tweet composer with prefilled text.
+  setStatus('Preparing image for sharing...');
+  exportCanvas(2, async (blob, dataUrl)=>{
+    // Try write to clipboard
+    try{
+      if(navigator.clipboard && navigator.clipboard.write){
+        const item = new ClipboardItem({'image/png': blob});
+        await navigator.clipboard.write([item]);
+        setStatus('Image copied to clipboard! Opening X tweet composer...');
+      } else {
+        setStatus('Clipboard not supported — opening tweet composer; you can attach/download image manually.');
+      }
+    }catch(e){
+      console.warn('clipboard failed', e);
+      setStatus('Could not copy automatically — opening tweet composer.');
+    }
+    // open X (Twitter) composer with prefilled text
+    const text = encodeURIComponent("Checkout my meme — made with Rialo Meme Generator 🔥");
+    const url = `https://twitter.com/intent/tweet?text=${text}`;
+    window.open(url, '_blank');
+  });
+});
+
+saveGalleryBtn.addEventListener('click', ()=>{
+  exportCanvas(1, (blob,dataUrl)=>{
+    // save dataUrl to localStorage (keep last 8)
+    try{
+      let arr = JSON.parse(localStorage.getItem('rialo_gallery')||'[]');
+      arr.unshift(dataUrl);
+      arr = arr.slice(0,8);
+      localStorage.setItem('rialo_gallery', JSON.stringify(arr));
+      loadGallery();
+      setStatus('Saved to gallery');
+    }catch(e){ console.error(e); setStatus('Gallery save failed'); }
+  });
+});
+
+function loadGallery(){
+  const arr = JSON.parse(localStorage.getItem('rialo_gallery')||'[]');
+  galleryEl.innerHTML = '';
+  arr.forEach((d,i)=>{
+    const div = document.createElement('div'); div.className='thumb';
+    const img = document.createElement('img'); img.src = d; img.style.width='100%'; img.style.height='100%'; img.style.objectFit='cover';
+    div.appendChild(img);
+    div.addEventListener('click', ()=> {
+      // open in new tab full size
+      const w = window.open(); w.document.title='Saved Meme'; const im = w.document.createElement('img'); im.src = d; im.style.width='100%'; w.document.body.style.margin='0'; w.document.body.appendChild(im);
+    });
+    galleryEl.appendChild(div);
+  });
+}
+
+/* ======== UI Events and startup ======== */
+window.addEventListener('resize', ()=>{ fitCanvasToWindow(); render(); });
+fitCanvasToWindow(); render();
+loadGallery();
+
+/* Small UX: clicking upload label triggers file input */
+uploadLabel.addEventListener('click', ()=> imgUpload.click());
+
+/* Double handler: keyboard shortcuts */
+window.addEventListener('keydown', (e)=>{
+  if((e.ctrlKey||e.metaKey) && e.key==='s'){ e.preventDefault(); downloadBtn.click(); }
+  if(e.key==='Delete' && selectedId){ deleteLayerBtn.click(); }
+});
+
+/* Initialize with small sample text */
+addTextLayer('MAKE IT RIALO', canvas.width/2, canvas.height*0.12);
+addTextLayer('Share the vibe', canvas.width/2, canvas.height*0.88);
+populateControlsFromSelected();
+render();
 </script>
-
 </body>
 </html>
