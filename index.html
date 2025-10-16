@@ -1,146 +1,879 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Zama Community Hub</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pro Meme Generator — Rialo Theme</title>
+
+  <!-- Google fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+
   <style>
-    body {margin:0; font-family:sans-serif; background:#1a1a1a; color:#eee; display:flex; flex-direction:column; align-items:center; padding:10px;}
-    h1 {color:#FF6B6B;}
-    .section {margin:15px; padding:15px; border:2px solid #444; border-radius:10px; width:90%; max-width:600px; background:#222;}
-    button, select, input {margin:5px; padding:6px 10px; border-radius:5px; border:none; cursor:pointer;}
-    canvas{border:2px solid #444; margin-top:10px;}
+    :root{
+      --bg:#0f1724;
+      --card:#0b1220;
+      --muted:#9aa6b2;
+      --accent1:linear-gradient(90deg,#7c3aed,#06b6d4);
+      --glass: rgba(255,255,255,0.03);
+      --success: #10b981;
+      --danger: #ef4444;
+      --max-width: 1200px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:var(--bg);font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;}
+    .container{max-width:var(--max-width);margin:28px auto;padding:20px;display:grid;grid-template-columns: 1fr 360px;gap:20px;}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:14px;padding:16px;box-shadow: 0 6px 30px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03);}
+    header{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+    .logo{width:56px;height:56px;border-radius:10px;background:var(--accent1);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-family:Montserrat;}
+    h1{font-size:18px;margin:0;color:#fff}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;border:none;color:white;cursor:pointer;background:linear-gradient(90deg,#374151,#111827);}
+    .btn.primary{background:var(--accent1);box-shadow:0 6px 18px rgba(124,58,237,0.18)}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted);}
+    .controls{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+    .row{display:flex;gap:8px;align-items:center}
+    label{font-size:12px;color:var(--muted);min-width:120px}
+    input[type="text"], select, input[type="number"], textarea {width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:rgba(255,255,255,0.02);color:#fff;font-size:13px}
+    input[type="color"]{height:36px;width:56px;padding:0;border-radius:8px;border:none;cursor:pointer}
+    .right-panel{position:sticky;top:20px;height:calc(100vh - 40px);overflow:auto;padding-right:8px}
+    .canvas-wrap{display:flex;flex-direction:column;gap:10px;align-items:center}
+    .canvas-card{background:var(--glass);padding:12px;border-radius:12px;display:flex;flex-direction:column;align-items:center}
+    canvas{background:#0b1220;border-radius:8px;max-width:100%;display:block}
+    .small{font-size:12px;color:var(--muted)}
+    .layers{margin-top:10px;border-radius:8px;padding:8px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);border:1px dashed rgba(255,255,255,0.02)}
+    .layer-item{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;margin-bottom:6px;background:rgba(255,255,255,0.01)}
+    .layer-item.active{outline:2px solid rgba(99,102,241,0.18)}
+    .muted{color:var(--muted)}
+    .footer-note{font-size:12px;color:var(--muted);margin-top:8px}
+    .flex{display:flex;gap:8px}
+    .grow{flex:1}
+    .danger{background:linear-gradient(90deg,#ef4444,#ef6e6e)}
+    .nice-hr{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.02),transparent);margin:10px 0;border-radius:1px}
+    .select{padding:8px;border-radius:8px;background:rgba(255,255,255,0.01);color:#fff;border:1px solid rgba(255,255,255,0.03)}
+    .accent-pill{padding:6px 10px;border-radius:999px;background:rgba(124,58,237,0.12);color:#c4b3f3;font-size:12px}
+    .muted-block{padding:8px;border-radius:8px;background:rgba(255,255,255,0.01);color:var(--muted);font-size:13px}
+    footer.info{color:var(--muted);font-size:13px;margin-top:12px;text-align:center}
+    /* responsiveness */
+    @media (max-width:1000px){
+      .container{grid-template-columns: 1fr; padding:14px}
+      .right-panel{position:relative;height:auto}
+    }
   </style>
 </head>
 <body>
-<h1>Zama Community Hub</h1>
+  <div class="container">
+    <div class="card">
+      <header>
+        <div class="logo">R</div>
+        <div>
+          <h1>Pro Meme Generator</h1>
+          <p class="lead">Upload image → add styled text → download high-res meme.</p>
+        </div>
+      </header>
 
-<!-- 1️⃣ Quiz Tool -->
-<div class="section" id="quizSection">
-  <h2>Zama Quiz</h2>
-  <div id="quiz"></div>
-  <button onclick="checkAnswer()">Submit Answer</button>
-  <div id="score"></div>
-</div>
+      <div class="toolbar">
+        <label class="btn ghost" id="uploadLabel">
+          Upload Image
+          <input id="imgUpload" type="file" accept="image/*" style="display:none">
+        </label>
 
-<!-- 2️⃣ Logo / Art Generator -->
-<div class="section">
-  <h2>Zama Logo Generator</h2>
-  <canvas id="logoCanvas" width="300" height="300"></canvas>
-  <select id="shape">
-    <option value="circle">Circle</option>
-    <option value="hex">Hexagon</option>
-    <option value="triangle">Triangle</option>
-  </select>
-  <select id="palette">
-    <option value="warm">Warm</option>
-    <option value="cool">Cool</option>
-  </select>
-  <button onclick="drawLogo()">Generate Logo</button>
-</div>
+        <button class="btn ghost" id="clearImage">Clear</button>
+        <button class="btn primary" id="addTextBtn">Add Text</button>
+        <button class="btn" id="downloadBtn">Download PNG</button>
 
-<!-- 3️⃣ Random Fact / Tip -->
-<div class="section">
-  <h2>Zama Fact Generator</h2>
-  <div id="fact"></div>
-  <button onclick="newFact()">Show Fact</button>
-</div>
+        <div style="margin-left:auto" class="flex">
+          <div class="muted-block">
+            <label class="small">Canvas Size</label>
+            <div style="display:flex;gap:6px;margin-top:6px">
+              <select id="presetSize" class="select">
+                <option value="auto">Auto (image size)</option>
+                <option value="1200x630">1200×630 (Twitter)</option>
+                <option value="1080x1080">1080×1080 (Instagram)</option>
+                <option value="1920x1080">1920×1080 (16:9)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
 
-<!-- 4️⃣ Poll / Vote -->
-<div class="section">
-  <h2>Vote Your Favorite Zama Feature</h2>
-  <label><input type="radio" name="vote" value="Perps Dex">Perps Dex</label>
-  <label><input type="radio" name="vote" value="AI Tools">AI Tools</label>
-  <label><input type="radio" name="vote" value="Community Quests">Community Quests</label>
-  <button onclick="submitVote()">Vote</button>
-  <div id="pollResult"></div>
-</div>
+      <div class="canvas-wrap" style="margin-top:12px">
+        <div class="canvas-card">
+          <canvas id="memeCanvas" width="900" height="500"></canvas>
+        </div>
 
-<!-- 5️⃣ Countdown Timer -->
-<div class="section">
-  <h2>Next Zama Update</h2>
-  <div id="timer"></div>
-</div>
+        <div style="width:100%;display:flex;gap:8px;align-items:center;justify-content:space-between">
+          <div class="small muted">Tip: Click a text to edit. Drag to move. Use outline & shadow for pro look.</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <label class="small muted">Export scale:</label>
+            <select id="exportScale" class="select" style="width:90px">
+              <option value="1">1× (web)</option>
+              <option value="2">2× (HD)</option>
+              <option value="3">3× (Print)</option>
+            </select>
+          </div>
+        </div>
 
-<script>
-/* --------- 1️⃣ Quiz Tool --------- */
-let questions = [
-  {q:"What is Zama?", options:["AI Project","Crypto Dex"], answer:1},
-  {q:"Which feature is Perps Dex?", options:["Trading","Gaming"], answer:0}
-];
-function renderQuiz(){
-  let html = "";
-  questions.forEach((ques,i)=>{
-    html += `<p>${i+1}. ${ques.q}</p>`;
-    ques.options.forEach((opt,j)=>{
-      html += `<label><input type="radio" name="q${i}" value="${j}"> ${opt}</label><br>`;
+        <div class="layers" id="layersList">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="font-weight:600;color:#fff">Layers</div>
+            <div class="small muted">Order = top → bottom</div>
+          </div>
+          <!-- layers will be appended here -->
+        </div>
+      </div>
+
+      <div class="nice-hr"></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="accent-pill">Pro Tips</div>
+        <div class="muted" style="font-size:13px">Use bold fonts, stroke, and slight shadow for contrast on any background.</div>
+      </div>
+
+      <footer class="info">
+        Built for quick share — export high-res and post to X/Instagram. No sign-in required.
+      </footer>
+    </div>
+
+    <!-- Right panel: controls -->
+    <aside class="right-panel">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-weight:700;color:white">Selected Text</div>
+            <div class="small muted">Edit properties of the highlighted text layer</div>
+          </div>
+          <div class="small muted" id="selectedInfo">No selection</div>
+        </div>
+
+        <div class="controls" style="margin-top:12px">
+          <div class="row">
+            <label>Text</label>
+            <input type="text" id="textValue" placeholder="Type your meme text">
+          </div>
+
+          <div class="row">
+            <label>Font</label>
+            <select id="fontFamily" class="select">
+              <option value="Impact, Arial Black, sans-serif">Impact</option>
+              <option value="'Montserrat', sans-serif">Montserrat</option>
+              <option value="'Inter', sans-serif">Inter</option>
+              <option value="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif">System UI</option>
+            </select>
+          </div>
+
+          <div class="row">
+            <label>Size</label>
+            <input type="range" id="fontSize" min="18" max="160" value="48">
+            <div style="width:56px;text-align:right;color:#fff" id="fontSizeVal">48</div>
+          </div>
+
+          <div class="row">
+            <label>Color</label>
+            <input type="color" id="fontColor" value="#ffffff">
+            <label style="margin-left:8px">Outline</label>
+            <input type="color" id="strokeColor" value="#000000">
+            <input type="number" id="strokeWidth" value="6" min="0" max="40" style="width:64px;margin-left:6px">
+          </div>
+
+          <div class="row">
+            <label>Shadow</label>
+            <input type="checkbox" id="shadowToggle">
+            <label style="margin-left:8px">X</label><input type="number" id="shadowX" value="2" style="width:56px" min="-40" max="40">
+            <label style="margin-left:6px">Y</label><input type="number" id="shadowY" value="2" style="width:56px" min="-40" max="40">
+            <label style="margin-left:6px">Blur</label><input type="number" id="shadowBlur" value="6" style="width:56px" min="0" max="80">
+          </div>
+
+          <div class="row">
+            <label>Align</label>
+            <select id="textAlign" class="select" style="width:120px">
+              <option value="center">Center</option>
+              <option value="left">Left</option>
+              <option value="right">Right</option>
+            </select>
+            <label style="margin-left:6px">Rotate</label>
+            <input type="range" id="rotate" min="-180" max="180" value="0">
+            <div id="rotateVal" class="small muted" style="width:36px;text-align:right">0°</div>
+          </div>
+
+          <div class="row">
+            <label>Opacity</label>
+            <input type="range" id="opacity" min="0" max="100" value="100">
+            <div id="opacityVal" class="small muted" style="width:36px;text-align:right">100%</div>
+          </div>
+
+          <div class="row">
+            <label>Watermark</label>
+            <input type="checkbox" id="watermarkToggle">
+            <input type="text" id="watermarkText" placeholder="@yourhandle" value="@Rialo" style="margin-left:6px">
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn primary grow" id="addTextBtn2">Add Text</button>
+            <button class="btn ghost" id="deleteTextBtn">Delete</button>
+          </div>
+
+          <div class="nice-hr"></div>
+
+          <div>
+            <div style="font-weight:700;color:white">Background & Image</div>
+            <div class="small muted">Background color or image fit options</div>
+
+            <div class="row" style="margin-top:8px">
+              <label>BG Color</label>
+              <input type="color" id="bgColor" value="#0b1220">
+            </div>
+
+            <div class="row">
+              <label>Image Fit</label>
+              <select id="imgFit" class="select">
+                <option value="cover">Cover (crop)</option>
+                <option value="contain">Contain (fit)</option>
+                <option value="stretch">Stretch</option>
+              </select>
+              <label style="margin-left:6px">Opacity</label>
+              <input type="range" id="imgOpacity" min="0" max="100" value="100" style="width:120px">
+            </div>
+
+            <div class="row" style="margin-top:6px">
+              <label>Canvas Bg</label>
+              <select id="canvasBgMode" class="select">
+                <option value="transparent">Transparent</option>
+                <option value="solid">Solid color</option>
+                <option value="checker">Checker</option>
+              </select>
+            </div>
+
+            <div class="small muted" style="margin-top:8px">Pro export tip: use 2× or 3× for crisp social images.</div>
+          </div>
+
+        </div>
+
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    /* ========== State ========== */
+    const canvas = document.getElementById('memeCanvas');
+    const ctx = canvas.getContext('2d', {alpha:true});
+    let image = null;
+    let imageOpacity = 1;
+    let imgFit = 'cover';
+    let bgColor = '#0b1220';
+    let canvasBgMode = 'transparent';
+
+    // Layer structure: {id, text, x,y, font, size, color, strokeColor, strokeWidth, align, rotate, opacity, shadow:{...}}
+    let layers = [];
+    let selectedLayerId = null;
+    let dragging = false;
+    let dragOffset = {x:0,y:0};
+    let lastPointer = {x:0,y:0};
+
+    // DOM
+    const imgUpload = document.getElementById('imgUpload');
+    const uploadLabel = document.getElementById('uploadLabel');
+    const clearImageBtn = document.getElementById('clearImage');
+    const addTextBtn = document.getElementById('addTextBtn');
+    const addTextBtn2 = document.getElementById('addTextBtn2');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const layersList = document.getElementById('layersList');
+
+    // Controls
+    const textValue = document.getElementById('textValue');
+    const fontFamily = document.getElementById('fontFamily');
+    const fontSize = document.getElementById('fontSize');
+    const fontSizeVal = document.getElementById('fontSizeVal');
+    const fontColor = document.getElementById('fontColor');
+    const strokeColor = document.getElementById('strokeColor');
+    const strokeWidth = document.getElementById('strokeWidth');
+    const shadowToggle = document.getElementById('shadowToggle');
+    const shadowX = document.getElementById('shadowX');
+    const shadowY = document.getElementById('shadowY');
+    const shadowBlur = document.getElementById('shadowBlur');
+    const textAlign = document.getElementById('textAlign');
+    const rotate = document.getElementById('rotate');
+    const rotateVal = document.getElementById('rotateVal');
+    const opacity = document.getElementById('opacity');
+    const opacityVal = document.getElementById('opacityVal');
+    const watermarkToggle = document.getElementById('watermarkToggle');
+    const watermarkText = document.getElementById('watermarkText');
+
+    const bgColorControl = document.getElementById('bgColor');
+    const imgFitControl = document.getElementById('imgFit');
+    const imgOpacityControl = document.getElementById('imgOpacity');
+    const canvasBgModeControl = document.getElementById('canvasBgMode');
+    const presetSize = document.getElementById('presetSize');
+    const exportScale = document.getElementById('exportScale');
+
+    const selectedInfo = document.getElementById('selectedInfo');
+    const deleteTextBtn = document.getElementById('deleteTextBtn');
+
+    /* ========== Helpers ========== */
+    function uid(prefix='id'){return prefix + Math.random().toString(36).slice(2,9)}
+    function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
+
+    function clearCanvas(){
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      // background
+      if(canvasBgMode === 'solid'){
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+      } else if(canvasBgMode === 'checker'){
+        // draw checkerboard
+        const size = 16;
+        for(let y=0;y<canvas.height;y+=size){
+          for(let x=0;x<canvas.width;x+=size){
+            const isLight = ((x/size|0) + (y/size|0)) % 2 === 0;
+            ctx.fillStyle = isLight ? '#111827' : '#0b1220';
+            ctx.fillRect(x,y,size,size);
+          }
+        }
+      } // else transparent (do nothing)
+    }
+
+    function drawImageFit(){
+      if(!image) return;
+      const cw = canvas.width, ch = canvas.height;
+      ctx.save();
+      ctx.globalAlpha = imageOpacity;
+      const iw = image.width, ih = image.height;
+      if(imgFit === 'cover'){
+        // scale to cover, center crop
+        const scale = Math.max(cw/iw, ch/ih);
+        const w = iw * scale, h = ih * scale;
+        const x = (cw - w) / 2, y = (ch - h) / 2;
+        ctx.drawImage(image, x, y, w, h);
+      } else if(imgFit === 'contain'){
+        const scale = Math.min(cw/iw, ch/ih);
+        const w = iw * scale, h = ih * scale;
+        const x = (cw - w) / 2, y = (ch - h) / 2;
+        ctx.drawImage(image, x, y, w, h);
+      } else if(imgFit === 'stretch'){
+        ctx.drawImage(image, 0, 0, cw, ch);
+      }
+      ctx.restore();
+    }
+
+    function render(){
+      clearCanvas();
+      drawImageFit();
+
+      // Draw layers in order (bottom -> top)
+      layers.forEach(layer => {
+        drawTextLayer(layer);
+      });
+
+      // Watermark
+      if(watermarkToggle.checked && watermarkText.value.trim()){
+        ctx.save();
+        ctx.globalAlpha = 0.6;
+        ctx.fillStyle = 'rgba(255,255,255,0.16)';
+        ctx.font = 'bold 20px Inter, sans-serif';
+        const wm = watermarkText.value;
+        ctx.translate(canvas.width - 12, canvas.height - 12);
+        ctx.rotate(-Math.PI/180 * 10);
+        ctx.textAlign = 'right';
+        ctx.fillText(wm, 0, 0);
+        ctx.restore();
+      }
+
+      // update layers list UI
+      updateLayersUI();
+    }
+
+    function drawTextLayer(layer){
+      ctx.save();
+      ctx.translate(layer.x, layer.y);
+      ctx.rotate((layer.rotate||0) * Math.PI/180);
+
+      ctx.globalAlpha = (layer.opacity||1);
+      ctx.textAlign = layer.align || 'center';
+      ctx.textBaseline = 'middle';
+      const font = `${layer.weight || '700'} ${layer.size}px ${layer.font}`;
+      ctx.font = font;
+
+      // shadow
+      if(layer.shadow && layer.shadow.enabled){
+        ctx.shadowColor = layer.shadow.color || 'rgba(0,0,0,0.8)';
+        ctx.shadowOffsetX = layer.shadow.x;
+        ctx.shadowOffsetY = layer.shadow.y;
+        ctx.shadowBlur = layer.shadow.blur;
+      } else {
+        ctx.shadowColor = 'transparent';
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+        ctx.shadowBlur = 0;
+      }
+
+      // stroke (outline)
+      if(layer.strokeWidth > 0){
+        ctx.lineWidth = layer.strokeWidth;
+        ctx.strokeStyle = layer.strokeColor || '#000';
+        ctx.miterLimit = 2;
+        ctx.strokeText(layer.text, 0, 0);
+      }
+
+      // fill
+      ctx.fillStyle = layer.color || '#fff';
+      ctx.fillText(layer.text, 0, 0);
+      ctx.restore();
+    }
+
+    function updateLayersUI(){
+      // rebuild
+      const list = layersList;
+      // remove existing items after top header (keep first child header)
+      list.querySelectorAll('.layer-item').forEach(n => n.remove());
+      // iterate reverse to show top-most first
+      layers.slice().reverse().forEach(layer => {
+        const li = document.createElement('div');
+        li.className = 'layer-item' + (layer.id === selectedLayerId ? ' active':'');
+        li.innerHTML = `
+          <div style="display:flex;gap:8px;align-items:center">
+            <div style="width:10px;height:10px;border-radius:3px;background:${layer.color};box-shadow:0 0 8px ${layer.color}66"></div>
+            <div style="min-width:180px">
+              <div style="font-size:13px;color:#fff">${layer.text || 'Untitled'}</div>
+              <div class="small muted">${layer.size}px • ${layer.font.split(',')[0]}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <button class="btn ghost" data-action="select" data-id="${layer.id}">Select</button>
+            <button class="btn ghost" data-action="up" data-id="${layer.id}">Up</button>
+            <button class="btn ghost" data-action="down" data-id="${layer.id}">Down</button>
+          </div>
+        `;
+        list.appendChild(li);
+
+        // attach handlers
+        li.querySelectorAll('button').forEach(b=>{
+          b.addEventListener('click', (e)=>{
+            const action = b.dataset.action;
+            const id = b.dataset.id;
+            if(action === 'select'){ selectLayer(id); }
+            else if(action === 'up'){ moveLayerUp(id); }
+            else if(action === 'down'){ moveLayerDown(id); }
+            render();
+          });
+        });
+      });
+    }
+
+    function selectLayer(id){
+      selectedLayerId = id;
+      const layer = layers.find(l => l.id === id);
+      if(layer){
+        // populate controls
+        textValue.value = layer.text;
+        fontFamily.value = layer.font;
+        fontSize.value = layer.size;
+        fontSizeVal.textContent = layer.size;
+        fontColor.value = layer.color;
+        strokeColor.value = layer.strokeColor || '#000000';
+        strokeWidth.value = layer.strokeWidth || 0;
+        shadowToggle.checked = layer.shadow?.enabled || false;
+        shadowX.value = layer.shadow?.x || 0;
+        shadowY.value = layer.shadow?.y || 0;
+        shadowBlur.value = layer.shadow?.blur || 0;
+        textAlign.value = layer.align || 'center';
+        rotate.value = layer.rotate || 0;
+        rotateVal.textContent = (layer.rotate||0) + '°';
+        opacity.value = Math.round((layer.opacity||1)*100);
+        opacityVal.textContent = opacity.value + '%';
+        selectedInfo.textContent = `Layer: ${layer.id.slice(-4)}`;
+      }
+      render();
+    }
+
+    function addTextLayer(defaultText='New Meme Text'){
+      const layer = {
+        id: uid('L_'),
+        text: defaultText,
+        x: canvas.width/2,
+        y: canvas.height/2,
+        font: fontFamily.value || "Impact, Arial Black, sans-serif",
+        size: parseInt(fontSize.value) || 48,
+        weight: '700',
+        color: fontColor.value || '#ffffff',
+        strokeColor: strokeColor.value || '#000000',
+        strokeWidth: parseInt(strokeWidth.value) || 6,
+        align: textAlign.value || 'center',
+        rotate: parseInt(rotate.value) || 0,
+        opacity: (parseInt(opacity.value)||100)/100,
+        shadow:{
+          enabled: shadowToggle.checked,
+          x: parseInt(shadowX.value) || 0,
+          y: parseInt(shadowY.value) || 0,
+          blur: parseInt(shadowBlur.value) || 6,
+          color: 'rgba(0,0,0,0.7)'
+        }
+      };
+      layers.push(layer);
+      selectLayer(layer.id);
+      render();
+    }
+
+    function deleteSelectedLayer(){
+      if(!selectedLayerId) return;
+      layers = layers.filter(l => l.id !== selectedLayerId);
+      selectedLayerId = layers.length ? layers[layers.length-1].id : null;
+      if(selectedLayerId) selectLayer(selectedLayerId);
+      else {
+        selectedInfo.textContent = 'No selection';
+        // clear controls
+      }
+      render();
+    }
+
+    function moveLayerUp(id){
+      const idx = layers.findIndex(l=>l.id===id);
+      if(idx>=0 && idx < layers.length-1){
+        const temp = layers[idx];
+        layers[idx] = layers[idx+1];
+        layers[idx+1] = temp;
+      }
+    }
+    function moveLayerDown(id){
+      const idx = layers.findIndex(l=>l.id===id);
+      if(idx>0){
+        const temp = layers[idx];
+        layers[idx] = layers[idx-1];
+        layers[idx-1] = temp;
+      }
+    }
+
+    /* ========== Events & Interaction ========== */
+
+    // upload image
+    imgUpload.addEventListener('change', (e)=>{
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev)=>{
+        const img = new Image();
+        img.onload = ()=>{
+          image = img;
+          // auto resize canvas if 'auto' selected
+          if(presetSize.value === 'auto'){
+            // set canvas to image size (cap to 2000 max)
+            const max = 2000;
+            const w = Math.min(img.width, max);
+            const h = Math.min(img.height, max);
+            canvas.width = w;
+            canvas.height = h;
+          }
+          render();
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
     });
-  });
-  document.getElementById("quiz").innerHTML = html;
-}
-function checkAnswer(){
-  let score=0;
-  questions.forEach((ques,i)=>{
-    let val = document.querySelector(`input[name="q${i}"]:checked`);
-    if(val && parseInt(val.value) === ques.answer) score++;
-  });
-  document.getElementById("score").innerText = `Score: ${score} / ${questions.length}`;
-}
-renderQuiz();
 
-/* --------- 2️⃣ Logo Generator --------- */
-let canvas = document.getElementById("logoCanvas");
-let ctx = canvas.getContext("2d");
-function drawLogo(){
-  let shape = document.getElementById("shape").value;
-  let palette = document.getElementById("palette").value;
-  let colors = palette === "warm" ? ["#FF6B6B","#FFD93D","#6BCB77"] : ["#4D96FF","#28C7A9","#C77DFF"];
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.fillStyle = colors[0];
-  ctx.strokeStyle = colors[1];
-  ctx.lineWidth = 5;
-  let cx = canvas.width/2, cy = canvas.height/2;
-  let size = 100;
-  if(shape==="circle") ctx.beginPath(), ctx.arc(cx,cy,size,0,2*Math.PI), ctx.fill(), ctx.stroke();
-  if(shape==="triangle") ctx.beginPath(), ctx.moveTo(cx,cy-size), ctx.lineTo(cx-size,cy+size), ctx.lineTo(cx+size,cy+size), ctx.closePath(), ctx.fill(), ctx.stroke();
-  if(shape==="hex") { ctx.beginPath(); for(let i=0;i<6;i++){ let angle=Math.PI/3*i; let x=cx+size*Math.cos(angle), y=cy+size*Math.sin(angle); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); } ctx.closePath(); ctx.fill(); ctx.stroke();}
-  ctx.fillStyle = colors[2]; ctx.font="40px sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText("Z",cx,cy);
-}
+    // clear image
+    clearImageBtn.addEventListener('click', ()=>{
+      image = null;
+      imgUpload.value = '';
+      render();
+    });
 
-/* --------- 3️⃣ Fact Generator --------- */
-let facts = [
-  "Zama's Perps Dex is fully decentralized.",
-  "Zama integrates AI tools for smarter trading.",
-  "Community Quests give points and rewards."
-];
-function newFact(){
-  document.getElementById("fact").innerText = facts[Math.floor(Math.random()*facts.length)];
-}
-newFact();
+    // add text
+    addTextBtn.addEventListener('click', ()=>addTextLayer('Top Text'));
+    addTextBtn2.addEventListener('click', ()=>addTextLayer('New Text'));
 
-/* --------- 4️⃣ Poll / Vote --------- */
-let votes=[0,0,0]; // perps, AI, quests
-function submitVote(){
-  let val = document.querySelector('input[name="vote"]:checked');
-  if(!val){ alert("Select an option!"); return; }
-  let idx = ["Perps Dex","AI Tools","Community Quests"].indexOf(val.value);
-  votes[idx]++;
-  document.getElementById("pollResult").innerText = `Votes: Perps Dex=${votes[0]}, AI Tools=${votes[1]}, Community Quests=${votes[2]}`;
-}
+    // delete
+    deleteTextBtn.addEventListener('click', deleteSelectedLayer);
 
-/* --------- 5️⃣ Countdown Timer --------- */
-let endTime = new Date("2025-12-20T00:00:00").getTime();
-setInterval(()=>{
-  let now = new Date().getTime();
-  let diff = endTime - now;
-  if(diff<0){ document.getElementById("timer").innerText="Update Released!"; return; }
-  let days = Math.floor(diff/(1000*60*60*24));
-  let hrs = Math.floor((diff%(1000*60*60*24))/(1000*60*60));
-  let mins = Math.floor((diff%(1000*60*60))/(1000*60));
-  let secs = Math.floor((diff%(1000*60))/1000);
-  document.getElementById("timer").innerText=`${days}d ${hrs}h ${mins}m ${secs}s left`;
-},1000);
+    // controls -> update layer
+    function applyControlsToSelected(){
+      const layer = layers.find(l => l.id === selectedLayerId);
+      if(!layer) return;
+      layer.text = textValue.value;
+      layer.font = fontFamily.value;
+      layer.size = parseInt(fontSize.value);
+      layer.color = fontColor.value;
+      layer.strokeColor = strokeColor.value;
+      layer.strokeWidth = parseInt(strokeWidth.value);
+      layer.shadow.enabled = shadowToggle.checked;
+      layer.shadow.x = parseInt(shadowX.value);
+      layer.shadow.y = parseInt(shadowY.value);
+      layer.shadow.blur = parseInt(shadowBlur.value);
+      layer.align = textAlign.value;
+      layer.rotate = parseInt(rotate.value);
+      layer.opacity = (parseInt(opacity.value)||100)/100;
+      render();
+    }
 
-</script>
+    textValue.addEventListener('input', applyControlsToSelected);
+    fontFamily.addEventListener('change', applyControlsToSelected);
+    fontSize.addEventListener('input', ()=>{
+      fontSizeVal.textContent = fontSize.value;
+      applyControlsToSelected();
+    });
+    fontColor.addEventListener('input', applyControlsToSelected);
+    strokeColor.addEventListener('input', applyControlsToSelected);
+    strokeWidth.addEventListener('input', applyControlsToSelected);
+    shadowToggle.addEventListener('change', applyControlsToSelected);
+    shadowX.addEventListener('input', applyControlsToSelected);
+    shadowY.addEventListener('input', applyControlsToSelected);
+    shadowBlur.addEventListener('input', applyControlsToSelected);
+    textAlign.addEventListener('change', applyControlsToSelected);
+    rotate.addEventListener('input', ()=>{
+      rotateVal.textContent = rotate.value + '°';
+      applyControlsToSelected();
+    });
+    opacity.addEventListener('input', ()=>{
+      opacityVal.textContent = opacity.value + '%';
+      applyControlsToSelected();
+    });
+
+    // bg controls
+    bgColorControl.addEventListener('input', (e)=>{ bgColor = e.target.value; render(); });
+    imgFitControl.addEventListener('change', (e)=>{ imgFit = e.target.value; render(); });
+    imgOpacityControl.addEventListener('input', (e)=>{ imageOpacity = parseInt(e.target.value)/100; render(); });
+    canvasBgModeControl.addEventListener('change', (e)=>{ canvasBgMode = e.target.value; render(); });
+
+    // preset sizes
+    presetSize.addEventListener('change', ()=>{
+      const v = presetSize.value;
+      if(v === 'auto'){
+        if(image){
+          canvas.width = Math.min(image.width, 1200);
+          canvas.height = Math.min(image.height, 800);
+        }
+      } else {
+        const [w,h] = v.split('x').map(Number);
+        canvas.width = w;
+        canvas.height = h;
+      }
+      render();
+    });
+
+    // drag & drop & pointer events for moving text
+    function getPointerPos(evt){
+      const rect = canvas.getBoundingClientRect();
+      const x = (evt.clientX - rect.left) * (canvas.width / rect.width);
+      const y = (evt.clientY - rect.top) * (canvas.height / rect.height);
+      return {x,y};
+    }
+
+    function findTopLayerAtPoint(x,y){
+      // iterate layers top-first
+      for(let i=layers.length-1;i>=0;i--){
+        const l = layers[i];
+        // measure text metrics
+        ctx.save();
+        ctx.font = `${l.weight||'700'} ${l.size}px ${l.font}`;
+        const metrics = ctx.measureText(l.text);
+        // approximate box - width based on measureText and line height
+        const w = metrics.width;
+        const h = l.size;
+        // compute rotated bounding box check by reversing rotation
+        // translate point into layer-local coords
+        const angle = (l.rotate||0) * Math.PI/180;
+        const dx = x - l.x, dy = y - l.y;
+        const localX = dx * Math.cos(-angle) - dy * Math.sin(-angle);
+        const localY = dx * Math.sin(-angle) + dy * Math.cos(-angle);
+        // align adjustments
+        let left = 0, right = 0;
+        if(l.align === 'center'){ left = -w/2; right = w/2; }
+        else if(l.align === 'left'){ left = 0; right = w; }
+        else { left = -w; right = 0; }
+        const top = -h/2, bottom = h/2;
+        if(localX >= left - 10 && localX <= right + 10 && localY >= top-8 && localY <= bottom+8){
+          ctx.restore();
+          return l;
+        }
+        ctx.restore();
+      }
+      return null;
+    }
+
+    canvas.addEventListener('mousedown', (e)=>{
+      const p = getPointerPos(e);
+      lastPointer = p;
+      const hit = findTopLayerAtPoint(p.x, p.y);
+      if(hit){
+        selectLayer(hit.id);
+        dragging = true;
+        const layer = layers.find(l=>l.id === hit.id);
+        dragOffset.x = p.x - layer.x;
+        dragOffset.y = p.y - layer.y;
+      } else {
+        // deselect if clicked on empty area
+        selectedLayerId = null;
+        selectedInfo.textContent = 'No selection';
+        render();
+      }
+    });
+
+    window.addEventListener('mousemove', (e)=>{
+      if(!dragging || !selectedLayerId) return;
+      const p = getPointerPos(e);
+      const layer = layers.find(l=>l.id === selectedLayerId);
+      if(!layer) return;
+      layer.x = p.x - dragOffset.x;
+      layer.y = p.y - dragOffset.y;
+      render();
+    });
+
+    window.addEventListener('mouseup', (e)=>{
+      dragging = false;
+    });
+
+    // Touch support
+    canvas.addEventListener('touchstart', (evt)=>{
+      evt.preventDefault();
+      const t = evt.touches[0];
+      const fake = {clientX: t.clientX, clientY: t.clientY};
+      canvas.dispatchEvent(new MouseEvent('mousedown', fake));
+    }, {passive:false});
+    canvas.addEventListener('touchmove', (evt)=>{
+      evt.preventDefault();
+      const t = evt.touches[0];
+      const fake = {clientX: t.clientX, clientY: t.clientY};
+      canvas.dispatchEvent(new MouseEvent('mousemove', fake));
+    }, {passive:false});
+    canvas.addEventListener('touchend', (evt)=>{
+      evt.preventDefault();
+      canvas.dispatchEvent(new MouseEvent('mouseup', {}));
+    });
+
+    // selection by layer buttons already handled
+
+    // Download / Export
+    downloadBtn.addEventListener('click', ()=>{
+      const scale = parseInt(exportScale.value) || 1;
+      // create temporary canvas
+      const tmp = document.createElement('canvas');
+      tmp.width = canvas.width * scale;
+      tmp.height = canvas.height * scale;
+      const tctx = tmp.getContext('2d');
+
+      // draw background
+      if(canvasBgMode === 'solid'){
+        tctx.fillStyle = bgColor;
+        tctx.fillRect(0,0,tmp.width,tmp.height);
+      } else if(canvasBgMode === 'checker'){
+        const size = 16 * scale;
+        for(let y=0;y<tmp.height;y+=size){
+          for(let x=0;x<tmp.width;x+=size){
+            const isLight = ((x/size|0) + (y/size|0)) % 2 === 0;
+            tctx.fillStyle = isLight ? '#111827' : '#0b1220';
+            tctx.fillRect(x,y,size,size);
+          }
+        }
+      } else {
+        tctx.clearRect(0,0,tmp.width,tmp.height);
+      }
+
+      // draw image with same fit
+      if(image){
+        tctx.globalAlpha = imageOpacity;
+        const iw = image.width, ih = image.height;
+        const cw = tmp.width, ch = tmp.height;
+        if(imgFit === 'cover'){
+          const scale2 = Math.max(cw/iw, ch/ih);
+          const w = iw * scale2, h = ih * scale2;
+          const x = (cw - w) / 2, y = (ch - h) / 2;
+          tctx.drawImage(image, x, y, w, h);
+        } else if(imgFit === 'contain'){
+          const scale2 = Math.min(cw/iw, ch/ih);
+          const w = iw * scale2, h = ih * scale2;
+          const x = (cw - w) / 2, y = (ch - h) / 2;
+          tctx.drawImage(image, x, y, w, h);
+        } else {
+          tctx.drawImage(image, 0, 0, cw, ch);
+        }
+      }
+
+      // draw layers
+      layers.forEach(layer=>{
+        tctx.save();
+        tctx.translate(layer.x * scale, layer.y * scale);
+        tctx.rotate((layer.rotate||0) * Math.PI/180);
+        tctx.globalAlpha = layer.opacity || 1;
+        tctx.textAlign = layer.align || 'center';
+        tctx.textBaseline = 'middle';
+        tctx.font = `${layer.weight||'700'} ${layer.size * scale}px ${layer.font}`;
+        if(layer.shadow && layer.shadow.enabled){
+          tctx.shadowColor = layer.shadow.color || 'rgba(0,0,0,0.7)';
+          tctx.shadowOffsetX = layer.shadow.x * scale;
+          tctx.shadowOffsetY = layer.shadow.y * scale;
+          tctx.shadowBlur = layer.shadow.blur * scale;
+        } else {
+          tctx.shadowColor = 'transparent';
+        }
+        if(layer.strokeWidth > 0){
+          tctx.lineWidth = layer.strokeWidth * scale;
+          tctx.strokeStyle = layer.strokeColor || '#000';
+          tctx.miterLimit = 2;
+          tctx.strokeText(layer.text, 0, 0);
+        }
+        tctx.fillStyle = layer.color || '#fff';
+        tctx.fillText(layer.text, 0, 0);
+        tctx.restore();
+      });
+
+      // watermark
+      if(watermarkToggle.checked && watermarkText.value.trim()){
+        tctx.save();
+        tctx.globalAlpha = 0.6;
+        tctx.fillStyle = 'rgba(255,255,255,0.16)';
+        tctx.font = `bold ${20 * scale}px Inter, sans-serif`;
+        const wm = watermarkText.value;
+        tctx.translate(tmp.width - 12 * scale, tmp.height - 12 * scale);
+        tctx.rotate(-Math.PI/180 * 10);
+        tctx.textAlign = 'right';
+        tctx.fillText(wm, 0, 0);
+        tctx.restore();
+      }
+
+      // download
+      tmp.toBlob(function(blob){
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `meme_${Date.now()}.png`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }, 'image/png');
+    });
+
+    // keyboard shortcuts
+    window.addEventListener('keydown', (e)=>{
+      if(e.key === 'Delete' || e.key === 'Backspace'){
+        deleteSelectedLayer();
+      }
+      if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd'){
+        addTextLayer('Duplicate');
+      }
+    });
+
+    // update properties periodically in case of programmatic selection changes
+    setInterval(()=>{ render(); }, 800);
+
+    // initial render
+    render();
+
+    // small enhancements: allow clicking sample text to populate and edit faster
+    // (no server, pure client)
+
+    // Make sure UI is responsive to direct edits: update text input on double click canvas to create new text
+    canvas.addEventListener('dblclick', (e)=>{
+      const p = getPointerPos(e);
+      addTextLayer('Double-click text');
+      // place at pointer
+      const layer = layers[layers.length-1];
+      layer.x = p.x;
+      layer.y = p.y;
+      selectLayer(layer.id);
+      render();
+    });
+
+    // clicking "upload label" triggers file input
+    uploadLabel.addEventListener('click', ()=> imgUpload.click());
+
+    // small UX: when selecting top header, prefill fontSizeVal
+    fontSizeVal.textContent = fontSize.value;
+  </script>
 </body>
 </html>
