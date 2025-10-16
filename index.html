@@ -3,80 +3,62 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pro Meme Generator</title>
+<title>Rialo Meme Tool</title>
 <style>
-  :root {
-    --bg: #0a1f3d;
-    --card: rgba(10,31,61,0.8);
-    --accent: #1DA1F2;
-    --glass: rgba(255,255,255,0.05);
-    --muted: #d1eaff;
-  }
-  body {
-    margin: 0;
-    font-family: 'Arial', sans-serif;
-    background: var(--bg);
-    color: white;
-    display: flex;
-    height: 100vh;
-    overflow: hidden;
-  }
-  #sidebar {
-    width: 250px;
-    background: var(--card);
-    padding: 15px;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    overflow-y: auto;
-  }
-  #canvas-container {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-    background: #0d284d;
-  }
-  canvas {
-    background: #fff;
-    max-width: 90%;
-    max-height: 90%;
-    box-shadow: 0 0 20px var(--accent);
-    border-radius: 10px;
-  }
-  input, button, select {
-    padding: 8px;
-    border-radius: 5px;
-    border: none;
-    outline: none;
-    font-size: 14px;
-  }
-  button {
-    background: var(--accent);
-    color: white;
-    cursor: pointer;
-  }
-  button:hover { opacity: 0.85; }
+:root {
+  --bg: #0a1f3d;
+  --card: rgba(10,31,61,0.8);
+  --accent: #1DA1F2;
+  --glass: rgba(255,255,255,0.05);
+  --muted: #d1eaff;
+}
+body{
+  margin:0; font-family: Arial, sans-serif;
+  display:flex; height:100vh; background:var(--bg); color:white; overflow:hidden;
+}
+#sidebar{
+  width:300px; background:var(--card); padding:15px; display:flex; flex-direction:column; gap:15px; overflow-y:auto;
+}
+#canvas-container{
+  flex:1; display:flex; justify-content:center; align-items:center; background:#0d284d; position:relative;
+}
+canvas{
+  background:#fff; max-width:90%; max-height:90%; box-shadow:0 0 25px var(--accent); border-radius:12px;
+  cursor:pointer;
+}
+button,input,select{padding:8px; border-radius:5px; border:none; outline:none; font-size:14px;}
+button{background:var(--accent); color:white; cursor:pointer;}
+button:hover{opacity:0.85;}
+h2,h3{margin:5px 0;}
+.sticker-btn{padding:5px; margin:2px; font-size:20px; cursor:pointer;}
 </style>
 </head>
 <body>
 
 <div id="sidebar">
-  <h2>Meme Tools</h2>
-  <input type="text" id="text-input" placeholder="Add text here">
+  <h2>Rialo Meme Tool</h2>
+  <input type="text" id="text-input" placeholder="Add text">
   <button id="add-text">Add Text</button>
-
   <h3>Text Color</h3>
   <input type="color" id="text-color" value="#1DA1F2">
-
   <h3>Font Size</h3>
   <input type="number" id="font-size" value="40" min="10" max="200">
-
-  <h3>Stickers</h3>
-  <button onclick="addEmoji('🔥')">🔥</button>
-  <button onclick="addEmoji('😂')">😂</button>
-  <button onclick="addEmoji('🚀')">🚀</button>
+  
+  <h3>Emojis</h3>
+  <div>
+    <span class="sticker-btn" onclick="addEmoji('🔥')">🔥</span>
+    <span class="sticker-btn" onclick="addEmoji('😂')">😂</span>
+    <span class="sticker-btn" onclick="addEmoji('🚀')">🚀</span>
+    <span class="sticker-btn" onclick="addEmoji('💀')">💀</span>
+    <span class="sticker-btn" onclick="addEmoji('🐸')">🐸</span>
+    <span class="sticker-btn" onclick="addEmoji('🤣')">🤣</span>
+    <span class="sticker-btn" onclick="addEmoji('🥵')">🥵</span>
+    <span class="sticker-btn" onclick="addEmoji('🥶')">🥶</span>
+    <span class="sticker-btn" onclick="addEmoji('👀')">👀</span>
+    <span class="sticker-btn" onclick="addEmoji('💥')">💥</span>
+  </div>
+  
+  <h3>PNG Stickers</h3>
   <input type="file" id="sticker-upload" accept="image/*">
 
   <h3>Actions</h3>
@@ -95,35 +77,39 @@ let logoImg = new Image();
 logoImg.src = 'https://pbs.twimg.com/profile_images/1950265537784926208/qbjSWMDP_400x400.jpg';
 
 let layers = [];
+let selectedLayer = null;
+let offsetX, offsetY;
+let isResizing = false;
 
-function uid(){ return '_' + Math.random().toString(36).substr(2, 9); }
+// --- Utility ---
+function uid(){ return '_' + Math.random().toString(36).substr(2,9); }
 
 // --- Render ---
 function clearCanvas(){ ctx.clearRect(0,0,canvas.width,canvas.height); }
 
 function drawLogo(){
-    if(logoImg.complete) ctx.drawImage(logoImg, 20, 20, 80, 80);
+    if(logoImg.complete) ctx.drawImage(logoImg, 20,20,80,80);
 }
 
 function drawLayers(){
-    layers.forEach(layer => {
+    layers.forEach(layer=>{
         ctx.save();
-        ctx.translate(layer.x, layer.y);
+        ctx.translate(layer.x,layer.y);
         ctx.rotate(layer.rotate || 0);
         ctx.globalAlpha = layer.opacity || 1;
-        if(layer.type === 'text'){
-            ctx.fillStyle = layer.color;
+        if(layer.type==='text'){
+            ctx.fillStyle=layer.color;
             ctx.font = `${layer.size}px Arial`;
-            ctx.textAlign = 'center';
+            ctx.textAlign='center';
             ctx.fillText(layer.text,0,0);
         }
-        if(layer.type === 'emoji'){
+        if(layer.type==='emoji'){
             ctx.font = `${layer.size}px Arial`;
-            ctx.textAlign = 'center';
+            ctx.textAlign='center';
             ctx.fillText(layer.emoji,0,0);
         }
-        if(layer.type === 'stickerImage' && layer.img){
-            ctx.drawImage(layer.img, -layer.w/2, -layer.h/2, layer.w, layer.h);
+        if(layer.type==='stickerImage' && layer.img){
+            ctx.drawImage(layer.img,-layer.w/2,-layer.h/2,layer.w,layer.h);
         }
         ctx.restore();
     });
@@ -136,8 +122,8 @@ function render(){
 }
 
 // --- Add Text ---
-document.getElementById('add-text').addEventListener('click', ()=>{
-    const txt = document.getElementById('text-input').value;
+document.getElementById('add-text').addEventListener('click',()=>{
+    const txt=document.getElementById('text-input').value;
     if(!txt) return;
     layers.push({
         id: uid(),
@@ -148,7 +134,7 @@ document.getElementById('add-text').addEventListener('click', ()=>{
         size: parseInt(document.getElementById('font-size').value),
         color: document.getElementById('text-color').value,
         rotate: 0,
-        opacity:1
+        opacity: 1
     });
     render();
 });
@@ -190,48 +176,50 @@ document.getElementById('sticker-upload').addEventListener('change', (e)=>{
     }
 });
 
-// --- Drag & Drop ---
-let selectedLayer = null;
-let offsetX, offsetY;
-
-canvas.addEventListener('mousedown', (e)=>{
+// --- Drag & Resize ---
+canvas.addEventListener('mousedown',(e)=>{
     const rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
-
     selectedLayer = layers.slice().reverse().find(layer=>{
         let lx = layer.x, ly = layer.y, size = layer.size || layer.w || 50;
-        return Math.abs(mx-lx) < size && Math.abs(my-ly) < size;
+        return Math.abs(mx-lx)<size && Math.abs(my-ly)<size;
     });
     if(selectedLayer){
         offsetX = mx - selectedLayer.x;
         offsetY = my - selectedLayer.y;
+        if(e.shiftKey) isResizing = true; else isResizing = false;
     }
 });
 
-canvas.addEventListener('mousemove', (e)=>{
+canvas.addEventListener('mousemove',(e)=>{
     if(!selectedLayer) return;
     const rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
-    selectedLayer.x = mx - offsetX;
-    selectedLayer.y = my - offsetY;
+    if(isResizing){
+        if(selectedLayer.type==='text' || selectedLayer.type==='emoji') selectedLayer.size = Math.max(10,my - selectedLayer.y);
+        if(selectedLayer.type==='stickerImage'){ selectedLayer.w = Math.max(20,mx - selectedLayer.x + selectedLayer.w/2); selectedLayer.h = Math.max(20,my - selectedLayer.y + selectedLayer.h/2);}
+    } else {
+        selectedLayer.x = mx - offsetX;
+        selectedLayer.y = my - offsetY;
+    }
     render();
 });
 
-canvas.addEventListener('mouseup', ()=>{ selectedLayer=null; });
-canvas.addEventListener('mouseleave', ()=>{ selectedLayer=null; });
+canvas.addEventListener('mouseup',()=>{ selectedLayer=null; });
+canvas.addEventListener('mouseleave',()=>{ selectedLayer=null; });
 
 // --- Download ---
-document.getElementById('download').addEventListener('click', ()=>{
+document.getElementById('download').addEventListener('click',()=>{
     const link = document.createElement('a');
-    link.download = 'meme.png';
+    link.download = 'rialo_meme.png';
     link.href = canvas.toDataURL('image/png');
     link.click();
 });
 
 logoImg.onload = render;
 </script>
+
 </body>
 </html>
-
