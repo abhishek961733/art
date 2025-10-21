@@ -1,225 +1,291 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rialo Meme Tool</title>
-<style>
-:root {
-  --bg: #0a1f3d;
-  --card: rgba(10,31,61,0.8);
-  --accent: #1DA1F2;
-  --glass: rgba(255,255,255,0.05);
-  --muted: #d1eaff;
-}
-body{
-  margin:0; font-family: Arial, sans-serif;
-  display:flex; height:100vh; background:var(--bg); color:white; overflow:hidden;
-}
-#sidebar{
-  width:300px; background:var(--card); padding:15px; display:flex; flex-direction:column; gap:15px; overflow-y:auto;
-}
-#canvas-container{
-  flex:1; display:flex; justify-content:center; align-items:center; background:#0d284d; position:relative;
-}
-canvas{
-  background:#fff; max-width:90%; max-height:90%; box-shadow:0 0 25px var(--accent); border-radius:12px;
-  cursor:pointer;
-}
-button,input,select{padding:8px; border-radius:5px; border:none; outline:none; font-size:14px;}
-button{background:var(--accent); color:white; cursor:pointer;}
-button:hover{opacity:0.85;}
-h2,h3{margin:5px 0;}
-.sticker-btn{padding:5px; margin:2px; font-size:20px; cursor:pointer;}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Image Puzzle Game (Embedded Photo)</title>
+  <style>
+    :root{--gap:6px}
+    body{font-family:Inter, system-ui, -apple-system,Segoe UI, Roboto, "Helvetica Neue", Arial; background:#0f172a;color:#e6eef8;display:flex;align-items:flex-start;gap:24px;padding:28px}
+    .panel{width:360px;min-height:200px;background:linear-gradient(180deg,#0b1220,#071022);border-radius:12px;padding:18px;box-shadow:0 6px 20px rgba(2,6,23,0.6)}
+    h1{font-size:18px;margin:0 0 12px}
+    label{display:block;font-size:13px;margin:8px 0 6px;color:#bcd3ff}
+    select,input[type=number]{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit}
+    button{margin-top:10px;padding:10px 12px;border-radius:10px;border:0;background:#2563eb;color:white;font-weight:600;cursor:pointer}
+    .status{margin-top:12px;font-size:13px;color:#b7c7ff}
+    .board-wrap{flex:1;display:flex;align-items:center;justify-content:center}
+    .board{background:#07102a;padding:var(--gap);border-radius:12px;display:grid;align-items:center;justify-items:center}
+    .tile{touch-action:none;user-select:none;border-radius:6px;box-shadow:0 4px 10px rgba(2,6,23,0.6);cursor:pointer}
+    .empty{background:transparent;cursor:default;box-shadow:none}
+    .controls-row{display:flex;gap:8px;margin-top:10px}
+    .small{padding:8px 10px;font-size:13px}
+    .footer-note{font-size:12px;color:#93a6ff;margin-top:10px}
+    @media (max-width:900px){body{flex-direction:column;align-items:stretch;padding:12px}.panel{width:100%}}
+  </style>
 </head>
 <body>
+  <div class="panel">
+    <h1>Image Puzzle — Embedded Photo</h1>
+    <label>Grid size</label>
+    <select id="size">
+      <option value="3">3 x 3 (easy)</option>
+      <option value="4" selected>4 x 4 (classic)</option>
+      <option value="5">5 x 5 (hard)</option>
+      <option value="6">6 x 6 (very hard)</option>
+    </select>
 
-<div id="sidebar">
-  <h2>Rialo Meme Tool</h2>
-  <input type="text" id="text-input" placeholder="Add text">
-  <button id="add-text">Add Text</button>
-  <h3>Text Color</h3>
-  <input type="color" id="text-color" value="#1DA1F2">
-  <h3>Font Size</h3>
-  <input type="number" id="font-size" value="40" min="10" max="200">
-  
-  <h3>Emojis</h3>
-  <div>
-    <span class="sticker-btn" onclick="addEmoji('🔥')">🔥</span>
-    <span class="sticker-btn" onclick="addEmoji('😂')">😂</span>
-    <span class="sticker-btn" onclick="addEmoji('🚀')">🚀</span>
-    <span class="sticker-btn" onclick="addEmoji('💀')">💀</span>
-    <span class="sticker-btn" onclick="addEmoji('🐸')">🐸</span>
-    <span class="sticker-btn" onclick="addEmoji('🤣')">🤣</span>
-    <span class="sticker-btn" onclick="addEmoji('🥵')">🥵</span>
-    <span class="sticker-btn" onclick="addEmoji('🥶')">🥶</span>
-    <span class="sticker-btn" onclick="addEmoji('👀')">👀</span>
-    <span class="sticker-btn" onclick="addEmoji('💥')">💥</span>
+    <div class="controls-row">
+      <button id="start">Create & Shuffle</button>
+      <button id="shuffle" class="small">Reshuffle</button>
+      <button id="solve" class="small">Show Solution</button>
+    </div>
+
+    <div class="status">
+      <div>Moves: <span id="moves">0</span></div>
+      <div>Time: <span id="timer">00:00</span></div>
+      <div class="footer-note">Tip: Click/tap a tile next to the empty space to move it. “Show Solution” will reset to solved.</div>
+    </div>
   </div>
-  
-  <h3>PNG Stickers</h3>
-  <input type="file" id="sticker-upload" accept="image/*">
 
-  <h3>Actions</h3>
-  <button id="download">Download Meme</button>
-</div>
-
-<div id="canvas-container">
-  <canvas id="meme-canvas" width="800" height="600"></canvas>
-</div>
+  <div class="board-wrap">
+    <div id="board" class="board" style="max-width:680px; max-height:680px; min-width:240px; min-height:240px;"></div>
+  </div>
 
 <script>
-const canvas = document.getElementById('meme-canvas');
-const ctx = canvas.getContext('2d');
+// Puzzle code starts here
+const sizeSelect = document.getElementById('size');
+const startBtn = document.getElementById('start');
+const shuffleBtn = document.getElementById('shuffle');
+const solveBtn = document.getElementById('solve');
+const boardEl = document.getElementById('board');
+const movesEl = document.getElementById('moves');
+const timerEl = document.getElementById('timer');
 
-let logoImg = new Image();
-logoImg.src = 'https://pbs.twimg.com/profile_images/1950265537784926208/qbjSWMDP_400x400.jpg';
+let img = new Image();
+img.src = 'https://pbs.twimg.com/profile_images/1950265537784926208/qbjSWMDP_400x400.jpg';
 
-let layers = [];
-let selectedLayer = null;
-let offsetX, offsetY;
-let isResizing = false;
+let cols = 4, rows = 4;
+let tiles = [];
+let emptyIndex = null;
+let moves = 0;
+let timerInterval = null;
+let startTime = null;
 
-// --- Utility ---
-function uid(){ return '_' + Math.random().toString(36).substr(2,9); }
-
-// --- Render ---
-function clearCanvas(){ ctx.clearRect(0,0,canvas.width,canvas.height); }
-
-function drawLogo(){
-    if(logoImg.complete) ctx.drawImage(logoImg, 20,20,80,80);
+function resetStatus(){
+  moves = 0;
+  movesEl.textContent = '0';
+  stopTimer();
+  timerEl.textContent = '00:00';
+}
+function startTimer(){
+  stopTimer();
+  startTime = Date.now();
+  timerInterval = setInterval(()=>{
+    const s = Math.floor((Date.now() - startTime)/1000);
+    const mm = String(Math.floor(s/60)).padStart(2,'0');
+    const ss = String(s%60).padStart(2,'0');
+    timerEl.textContent = mm + ':' + ss;
+  },250);
+}
+function stopTimer(){
+  if(timerInterval){ clearInterval(timerInterval); timerInterval = null; }
 }
 
-function drawLayers(){
-    layers.forEach(layer=>{
-        ctx.save();
-        ctx.translate(layer.x,layer.y);
-        ctx.rotate(layer.rotate || 0);
-        ctx.globalAlpha = layer.opacity || 1;
-        if(layer.type==='text'){
-            ctx.fillStyle=layer.color;
-            ctx.font = `${layer.size}px Arial`;
-            ctx.textAlign='center';
-            ctx.fillText(layer.text,0,0);
-        }
-        if(layer.type==='emoji'){
-            ctx.font = `${layer.size}px Arial`;
-            ctx.textAlign='center';
-            ctx.fillText(layer.emoji,0,0);
-        }
-        if(layer.type==='stickerImage' && layer.img){
-            ctx.drawImage(layer.img,-layer.w/2,-layer.h/2,layer.w,layer.h);
-        }
-        ctx.restore();
-    });
-}
+function buildBoard(){
+  boardEl.innerHTML = '';
+  boardEl.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+  boardEl.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+  tiles = [];
 
-function render(){
-    clearCanvas();
-    drawLogo();
-    drawLayers();
-}
+  const boardRect = boardEl.getBoundingClientRect();
+  const sizePx = Math.min(boardRect.width, boardRect.height);
+  const tileSizePx = Math.floor((sizePx - (cols-1)*0)/cols);
 
-// --- Add Text ---
-document.getElementById('add-text').addEventListener('click',()=>{
-    const txt=document.getElementById('text-input').value;
-    if(!txt) return;
-    layers.push({
-        id: uid(),
-        type: 'text',
-        text: txt,
-        x: canvas.width/2,
-        y: canvas.height/2,
-        size: parseInt(document.getElementById('font-size').value),
-        color: document.getElementById('text-color').value,
-        rotate: 0,
-        opacity: 1
-    });
-    render();
-});
+  const imgW = img.naturalWidth, imgH = img.naturalHeight;
+  const cw = Math.floor(imgW/cols), ch = Math.floor(imgH/rows);
 
-// --- Add Emoji ---
-function addEmoji(e){
-    layers.push({
-        id: uid(),
-        type: 'emoji',
-        emoji: e,
-        x: canvas.width/2,
-        y: canvas.height/2,
-        size: 60,
-        rotate: 0,
-        opacity:1
-    });
-    render();
-}
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const idx = r*cols + c;
+      const canvas = document.createElement('canvas');
+      canvas.width = cw; canvas.height = ch;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, c*cw, r*ch, cw, ch, 0, 0, cw, ch);
+      const dataURL = canvas.toDataURL();
 
-// --- Add Sticker Image ---
-document.getElementById('sticker-upload').addEventListener('change', (e)=>{
-    const file = e.target.files[0];
-    if(!file) return;
-    const img = new Image();
-    img.src = URL.createObjectURL(file);
-    img.onload = ()=>{
-        layers.push({
-            id: uid(),
-            type: 'stickerImage',
-            img,
-            x: canvas.width/2,
-            y: canvas.height/2,
-            w: img.width/2,
-            h: img.height/2,
-            rotate:0,
-            opacity:1
-        });
-        render();
+      const tileEl = document.createElement('div');
+      tileEl.className = 'tile';
+      tileEl.style.width = '100%';
+      tileEl.style.height = '100%';
+      tileEl.style.backgroundImage = `url(${dataURL})`;
+      tileEl.style.backgroundSize = 'cover';
+      tileEl.style.backgroundPosition = 'center';
+      tileEl.dataset.index = idx;
+
+      const tileObj = { id: idx, correctPos: idx, currentPos: idx, el: tileEl };
+      tiles.push(tileObj);
+
+      tileEl.addEventListener('click', ()=> onTileClick(idx));
     }
-});
+  }
 
-// --- Drag & Resize ---
-canvas.addEventListener('mousedown',(e)=>{
-    const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
-    selectedLayer = layers.slice().reverse().find(layer=>{
-        let lx = layer.x, ly = layer.y, size = layer.size || layer.w || 50;
-        return Math.abs(mx-lx)<size && Math.abs(my-ly)<size;
-    });
-    if(selectedLayer){
-        offsetX = mx - selectedLayer.x;
-        offsetY = my - selectedLayer.y;
-        if(e.shiftKey) isResizing = true; else isResizing = false;
+  // last tile is empty
+  emptyIndex = tiles.length - 1;
+  tiles[emptyIndex].el.style.visibility = 'hidden';
+  tiles[emptyIndex].el.classList.add('empty');
+
+  // append wrappers
+  for(let i=0;i<tiles.length;i++){
+    const wrapper = document.createElement('div');
+    wrapper.style.width = '100%';
+    wrapper.style.height = '100%';
+    wrapper.style.overflow = 'hidden';
+    wrapper.style.borderRadius = '6px';
+    wrapper.appendChild(tiles[i].el);
+    boardEl.appendChild(wrapper);
+  }
+}
+
+function onTileClick(index){
+  const tileIdx = tiles.findIndex(t => t.currentPos === index);
+  if(tileIdx === -1) return;
+  const tile = tiles[tileIdx];
+  const target = tile.currentPos;
+  const neighbors = getNeighbors(emptyIndex);
+  if(neighbors.includes(target)){
+    // swap
+    const a = tile;
+    const b = tiles.find(t=>t.currentPos === emptyIndex);
+    const tmp = a.currentPos;
+    a.currentPos = b.currentPos;
+    b.currentPos = tmp;
+    emptyIndex = target;
+
+    moves++;
+    movesEl.textContent = moves;
+    if(!timerInterval) startTimer();
+    renderTiles();
+    if(checkSolved()){
+      stopTimer();
+      setTimeout(()=> alert(`Solved in ${moves} moves and ${timerEl.textContent}!`),200);
     }
-});
+  }
+}
 
-canvas.addEventListener('mousemove',(e)=>{
-    if(!selectedLayer) return;
-    const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
-    if(isResizing){
-        if(selectedLayer.type==='text' || selectedLayer.type==='emoji') selectedLayer.size = Math.max(10,my - selectedLayer.y);
-        if(selectedLayer.type==='stickerImage'){ selectedLayer.w = Math.max(20,mx - selectedLayer.x + selectedLayer.w/2); selectedLayer.h = Math.max(20,my - selectedLayer.y + selectedLayer.h/2);}
-    } else {
-        selectedLayer.x = mx - offsetX;
-        selectedLayer.y = my - offsetY;
+function getNeighbors(pos){
+  const r = Math.floor(pos/cols), c = pos%cols;
+  const neighbors = [];
+  [[1,0],[-1,0],[0,1],[0,-1]].forEach(d=>{
+    const nr = r + d[0], nc = c + d[1];
+    if(nr>=0 && nr<rows && nc>=0 && nc<cols) neighbors.push(nr*cols + nc);
+  });
+  return neighbors;
+}
+
+function renderTiles(){
+  for(let pos=0; pos<tiles.length; pos++){
+    const tileObj = tiles.find(t=>t.currentPos === pos);
+    const wrapper = boardEl.children[pos];
+    wrapper.innerHTML = '';
+    if(tileObj){
+      wrapper.appendChild(tileObj.el);
+      if(tileObj.currentPos === emptyIndex){
+        tileObj.el.style.visibility = 'hidden';
+        tileObj.el.classList.add('empty');
+      } else {
+        tileObj.el.style.visibility = 'visible';
+        tileObj.el.classList.remove('empty');
+      }
     }
-    render();
+  }
+}
+
+function shuffleByRandomMoves(count=200){
+  for(let i=0;i<count;i++){
+    const neigh = getNeighbors(emptyIndex);
+    const pick = neigh[Math.floor(Math.random()*neigh.length)];
+    const tileObj = tiles.find(t=>t.currentPos === pick);
+    if(tileObj){
+      const tmp = tileObj.currentPos;
+      tileObj.currentPos = emptyIndex;
+      tiles.find(t=>t.currentPos===emptyIndex && t!==tileObj).currentPos = tmp;
+      emptyIndex = pick;
+    }
+  }
+}
+
+function checkSolved(){
+  return tiles.every(t => t.currentPos === t.correctPos);
+}
+
+// button events
+startBtn.addEventListener('click', ()=>{
+  cols = rows = parseInt(sizeSelect.value,10);
+  resetStatus();
+  img.onload = ()=>{
+    buildBoard();
+    shuffleByRandomMoves(250);
+    const emp = tiles.find(t=>t.correctPos === tiles.length-1);
+    emptyIndex = emp.currentPos;
+    renderTiles();
+  };
+  // if already loaded, trigger onload manually
+  if(img.complete) img.onload();
 });
 
-canvas.addEventListener('mouseup',()=>{ selectedLayer=null; });
-canvas.addEventListener('mouseleave',()=>{ selectedLayer=null; });
-
-// --- Download ---
-document.getElementById('download').addEventListener('click',()=>{
-    const link = document.createElement('a');
-    link.download = 'rialo_meme.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
+shuffleBtn.addEventListener('click', ()=>{
+  if(tiles.length===0) return;
+  shuffleByRandomMoves(200);
+  const emp = tiles.find(t=>t.correctPos === tiles.length-1);
+  emptyIndex = emp.currentPos;
+  moves = 0;
+  movesEl.textContent = '0';
+  stopTimer();
+  timerEl.textContent = '00:00';
+  renderTiles();
 });
 
-logoImg.onload = render;
+solveBtn.addEventListener('click', ()=>{
+  if(tiles.length===0) return;
+  tiles.forEach(t=> t.currentPos = t.correctPos);
+  emptyIndex = tiles.length-1;
+  moves = 0;
+  movesEl.textContent = '0';
+  stopTimer();
+  timerEl.textContent = '00:00';
+  renderTiles();
+});
+
+// initial placeholder
+function makePlaceholder(){
+  boardEl.style.width = 'min(68vmin,680px)';
+  boardEl.style.height = 'min(68vmin,680px)';
+  boardEl.innerHTML = '';
+  const pCols = 4, pRows = 4;
+  boardEl.style.gridTemplateColumns = `repeat(${pCols}, 1fr)`;
+  boardEl.style.gridTemplateRows = `repeat(${pRows}, 1fr)`;
+  for(let i=0;i<pCols*pRows;i++){
+    const wrapper = document.createElement('div');
+    wrapper.style.width='100%'; wrapper.style.height='100%';
+    wrapper.style.borderRadius='6px';
+    wrapper.style.background='linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))';
+    wrapper.style.backdropFilter='blur(2px)';
+    boardEl.appendChild(wrapper);
+  }
+}
+makePlaceholder();
+
+window.addEventListener('resize', ()=>{
+  if(tiles.length===0) return;
+  setTimeout(()=>{
+    const currentPositions = tiles.map(t=>t.currentPos);
+    buildBoard();
+    tiles.forEach((t,i)=> t.currentPos = currentPositions[i]);
+    const emp = tiles.find(t=>t.correctPos === tiles.length-1);
+    emptyIndex = emp.currentPos;
+    renderTiles();
+  },200);
+});
 </script>
-
 </body>
 </html>
