@@ -1,291 +1,377 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Image Puzzle Game (Embedded Photo)</title>
-  <style>
-    :root{--gap:6px}
-    body{font-family:Inter, system-ui, -apple-system,Segoe UI, Roboto, "Helvetica Neue", Arial; background:#0f172a;color:#e6eef8;display:flex;align-items:flex-start;gap:24px;padding:28px}
-    .panel{width:360px;min-height:200px;background:linear-gradient(180deg,#0b1220,#071022);border-radius:12px;padding:18px;box-shadow:0 6px 20px rgba(2,6,23,0.6)}
-    h1{font-size:18px;margin:0 0 12px}
-    label{display:block;font-size:13px;margin:8px 0 6px;color:#bcd3ff}
-    select,input[type=number]{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit}
-    button{margin-top:10px;padding:10px 12px;border-radius:10px;border:0;background:#2563eb;color:white;font-weight:600;cursor:pointer}
-    .status{margin-top:12px;font-size:13px;color:#b7c7ff}
-    .board-wrap{flex:1;display:flex;align-items:center;justify-content:center}
-    .board{background:#07102a;padding:var(--gap);border-radius:12px;display:grid;align-items:center;justify-items:center}
-    .tile{touch-action:none;user-select:none;border-radius:6px;box-shadow:0 4px 10px rgba(2,6,23,0.6);cursor:pointer}
-    .empty{background:transparent;cursor:default;box-shadow:none}
-    .controls-row{display:flex;gap:8px;margin-top:10px}
-    .small{padding:8px 10px;font-size:13px}
-    .footer-note{font-size:12px;color:#93a6ff;margin-top:10px}
-    @media (max-width:900px){body{flex-direction:column;align-items:stretch;padding:12px}.panel{width:100%}}
-  </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>11-piece Touch Puzzle (embedded photo)</title>
+<style>
+  :root{--bg:#07102a;--panel:#0b1220;--accent:#2563eb}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#07102a,#021026);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;color:#e6eef8;padding:18px}
+  .wrap{width:980px;max-width:96vw;background:linear-gradient(180deg,var(--panel),#061025);border-radius:12px;padding:18px;display:flex;gap:16px;box-shadow:0 10px 40px rgba(2,6,23,0.7)}
+  .left{width:340px;min-width:260px}
+  h1{font-size:16px;margin:0 0 8px}
+  label{font-size:13px;color:#bcd3ff;display:block;margin-top:8px}
+  select,button{width:100%;padding:10px;border-radius:8px;border:0;background:var(--accent);color:white;font-weight:600;cursor:pointer;margin-top:8px}
+  .info{font-size:13px;color:#a8beff;margin-top:10px}
+  .board-wrap{flex:1;display:flex;align-items:center;justify-content:center}
+  .board{width:620px;height:620px;background:#02102b;border-radius:10px;display:grid;grid-template-columns:1fr;grid-template-rows:1fr;align-items:center;justify-items:center;padding:10px;box-sizing:border-box;position:relative;overflow:hidden}
+  .piece{position:absolute;border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,0.6);touch-action:none;user-select:none;cursor:grab;transition:transform 180ms ease}
+  .piece.selected{outline:3px solid rgba(37,99,235,0.25);transform:scale(1.02)}
+  .controls{display:flex;gap:8px;margin-top:10px}
+  .small{padding:8px;background:#0f2748;border-radius:8px;border:0;color:#dfeeff;cursor:pointer}
+  .meta{font-size:13px;color:#9fb7ff;margin-top:8px}
+  @media (max-width:880px){.wrap{flex-direction:column}.left{width:100%}}
+</style>
 </head>
 <body>
-  <div class="panel">
-    <h1>Image Puzzle — Embedded Photo</h1>
-    <label>Grid size</label>
-    <select id="size">
-      <option value="3">3 x 3 (easy)</option>
-      <option value="4" selected>4 x 4 (classic)</option>
-      <option value="5">5 x 5 (hard)</option>
-      <option value="6">6 x 6 (very hard)</option>
+
+<div class="wrap">
+  <div class="left">
+    <h1>11-piece Puzzle — Top/Middle/Bottom slices</h1>
+    <label>Shuffle intensity</label>
+    <select id="intensity">
+      <option value="10">Light (10 swaps)</option>
+      <option value="30" selected>Medium (30 swaps)</option>
+      <option value="60">Hard (60 swaps)</option>
     </select>
 
-    <div class="controls-row">
-      <button id="start">Create & Shuffle</button>
-      <button id="shuffle" class="small">Reshuffle</button>
-      <button id="solve" class="small">Show Solution</button>
+    <div class="controls">
+      <button id="create">Create & Shuffle</button>
+      <button id="reshuffle" class="small">Reshuffle</button>
+      <button id="solve" class="small">Show Solved</button>
     </div>
 
-    <div class="status">
-      <div>Moves: <span id="moves">0</span></div>
-      <div>Time: <span id="timer">00:00</span></div>
-      <div class="footer-note">Tip: Click/tap a tile next to the empty space to move it. “Show Solution” will reset to solved.</div>
+    <div class="info">
+      Instructions: Tap/click a piece to select it, then tap another piece to swap. On touch devices you can also drag and drop a piece onto another to swap.
+      <div class="meta">Moves: <span id="moves">0</span> · Solved: <span id="solved">No</span></div>
     </div>
   </div>
 
   <div class="board-wrap">
-    <div id="board" class="board" style="max-width:680px; max-height:680px; min-width:240px; min-height:240px;"></div>
+    <div id="board" class="board" aria-label="puzzle board"></div>
   </div>
+</div>
 
 <script>
-// Puzzle code starts here
-const sizeSelect = document.getElementById('size');
-const startBtn = document.getElementById('start');
-const shuffleBtn = document.getElementById('shuffle');
+/*
+  11-piece puzzle:
+  - Uses the image URL you provided.
+  - Splits image into 11 horizontal slices with different heights (gives top/middle/bottom separation).
+  - Creates absolutely positioned piece elements inside a square board and shuffles them.
+  - Supports: click-select-and-swap, touch drag-and-drop swap, reshuffle, show solved.
+*/
+
+const IMAGE_SRC = 'https://pbs.twimg.com/profile_images/1950265537784926208/qbjSWMDP_400x400.jpg';
+const board = document.getElementById('board');
+const createBtn = document.getElementById('create');
+const reshuffleBtn = document.getElementById('reshuffle');
 const solveBtn = document.getElementById('solve');
-const boardEl = document.getElementById('board');
-const movesEl = document.getElementById('moves');
-const timerEl = document.getElementById('timer');
+const intensitySelect = document.getElementById('intensity');
+const movesSpan = document.getElementById('moves');
+const solvedSpan = document.getElementById('solved');
 
 let img = new Image();
-img.src = 'https://pbs.twimg.com/profile_images/1950265537784926208/qbjSWMDP_400x400.jpg';
+img.crossOrigin = 'anonymous'; // to allow canvas extraction
+img.src = IMAGE_SRC;
 
-let cols = 4, rows = 4;
-let tiles = [];
-let emptyIndex = null;
+let pieces = []; // {id, correctIndex, currentIndex, el}
+let selectedPiece = null;
 let moves = 0;
-let timerInterval = null;
-let startTime = null;
 
-function resetStatus(){
-  moves = 0;
-  movesEl.textContent = '0';
-  stopTimer();
-  timerEl.textContent = '00:00';
-}
-function startTimer(){
-  stopTimer();
-  startTime = Date.now();
-  timerInterval = setInterval(()=>{
-    const s = Math.floor((Date.now() - startTime)/1000);
-    const mm = String(Math.floor(s/60)).padStart(2,'0');
-    const ss = String(s%60).padStart(2,'0');
-    timerEl.textContent = mm + ':' + ss;
-  },250);
-}
-function stopTimer(){
-  if(timerInterval){ clearInterval(timerInterval); timerInterval = null; }
-}
+const PIECE_COUNT = 11;
 
-function buildBoard(){
-  boardEl.innerHTML = '';
-  boardEl.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-  boardEl.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
-  tiles = [];
+// Define slice layout: array of heights (relative) summing to 1
+// This array chooses varied heights: top small slices, mid big, bottom medium.
+const sliceFractions = [0.06, 0.08, 0.10, 0.12, 0.15, 0.12, 0.10, 0.08, 0.06, 0.07, 0.06];
+// normalize in case they don't sum exactly
+const total = sliceFractions.reduce((a,b)=>a+b,0);
+for(let i=0;i<sliceFractions.length;i++) sliceFractions[i] /= total;
 
-  const boardRect = boardEl.getBoundingClientRect();
-  const sizePx = Math.min(boardRect.width, boardRect.height);
-  const tileSizePx = Math.floor((sizePx - (cols-1)*0)/cols);
+function resetState(){ pieces = []; selectedPiece = null; moves = 0; movesSpan.textContent = '0'; solvedSpan.textContent = 'No'; board.innerHTML=''; }
 
-  const imgW = img.naturalWidth, imgH = img.naturalHeight;
-  const cw = Math.floor(imgW/cols), ch = Math.floor(imgH/rows);
+function buildPieces(){
+  resetState();
+  // Board is square; we will scale image to fit board's size inside a square canvas preserving aspect ratio
+  const boardRect = board.getBoundingClientRect();
+  const boardSize = Math.min(boardRect.width, boardRect.height);
+  const canvas = document.createElement('canvas');
+  const scale = boardSize / Math.max(img.naturalWidth, img.naturalHeight);
+  const drawW = Math.round(img.naturalWidth * scale);
+  const drawH = Math.round(img.naturalHeight * scale);
+  canvas.width = drawW; canvas.height = drawH;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#000'; ctx.fillRect(0,0,drawW,drawH);
+  // center image in canvas
+  const offsetX = Math.floor((boardSize - drawW)/2);
+  const offsetY = Math.floor((boardSize - drawH)/2);
+  ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, 0, 0, drawW, drawH);
 
-  for(let r=0;r<rows;r++){
-    for(let c=0;c<cols;c++){
-      const idx = r*cols + c;
-      const canvas = document.createElement('canvas');
-      canvas.width = cw; canvas.height = ch;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, c*cw, r*ch, cw, ch, 0, 0, cw, ch);
-      const dataURL = canvas.toDataURL();
-
-      const tileEl = document.createElement('div');
-      tileEl.className = 'tile';
-      tileEl.style.width = '100%';
-      tileEl.style.height = '100%';
-      tileEl.style.backgroundImage = `url(${dataURL})`;
-      tileEl.style.backgroundSize = 'cover';
-      tileEl.style.backgroundPosition = 'center';
-      tileEl.dataset.index = idx;
-
-      const tileObj = { id: idx, correctPos: idx, currentPos: idx, el: tileEl };
-      tiles.push(tileObj);
-
-      tileEl.addEventListener('click', ()=> onTileClick(idx));
-    }
+  // compute slice pixel heights
+  let y = 0;
+  const sliceHeights = sliceFractions.map(fr => Math.round(fr * drawH));
+  // adjust rounding diff
+  let sumH = sliceHeights.reduce((a,b)=>a+b,0);
+  let diff = drawH - sumH;
+  let i=0;
+  while(diff !== 0){
+    sliceHeights[i % sliceHeights.length] += (diff>0?1:-1);
+    diff += (diff>0?-1:1);
+    i++;
   }
 
-  // last tile is empty
-  emptyIndex = tiles.length - 1;
-  tiles[emptyIndex].el.style.visibility = 'hidden';
-  tiles[emptyIndex].el.classList.add('empty');
+  // generate piece canvases
+  let accumY = 0;
+  for(let idx=0; idx<PIECE_COUNT; idx++){
+    const h = sliceHeights[idx];
+    const pw = drawW, ph = h;
+    const c = document.createElement('canvas');
+    c.width = pw; c.height = ph;
+    const cc = c.getContext('2d');
+    cc.drawImage(canvas, 0, accumY, pw, ph, 0, 0, pw, ph);
+    const dataURL = c.toDataURL();
 
-  // append wrappers
-  for(let i=0;i<tiles.length;i++){
-    const wrapper = document.createElement('div');
-    wrapper.style.width = '100%';
-    wrapper.style.height = '100%';
-    wrapper.style.overflow = 'hidden';
-    wrapper.style.borderRadius = '6px';
-    wrapper.appendChild(tiles[i].el);
-    boardEl.appendChild(wrapper);
+    // create piece element
+    const el = document.createElement('div');
+    el.className = 'piece';
+    el.style.width = pw + 'px';
+    el.style.height = ph + 'px';
+    el.style.left = (Math.floor(Math.random() * (boardSize - pw))) + 'px';
+    el.style.top = (Math.floor(Math.random() * (boardSize - ph))) + 'px';
+    el.style.backgroundImage = `url(${dataURL})`;
+    el.style.backgroundSize = 'cover';
+    el.style.backgroundPosition = 'center';
+    el.dataset.correctIndex = idx;
+    el.draggable = false;
+
+    // store piece
+    pieces.push({id: idx, correctIndex: idx, currentIndex: idx, el, width: pw, height: ph, yPos: accumY});
+    board.appendChild(el);
+
+    // attach interactions (click / touch / drag)
+    attachInteractions(el);
+
+    accumY += h;
   }
+
+  // After creating, place pieces in random positions (we already randomly positioned them),
+  // but we want a shuffled order for logical positions too (currentIndex).
+  shuffleLogicalPositions(40);
+  updateSolvedStatus();
 }
 
-function onTileClick(index){
-  const tileIdx = tiles.findIndex(t => t.currentPos === index);
-  if(tileIdx === -1) return;
-  const tile = tiles[tileIdx];
-  const target = tile.currentPos;
-  const neighbors = getNeighbors(emptyIndex);
-  if(neighbors.includes(target)){
-    // swap
-    const a = tile;
-    const b = tiles.find(t=>t.currentPos === emptyIndex);
-    const tmp = a.currentPos;
-    a.currentPos = b.currentPos;
-    b.currentPos = tmp;
-    emptyIndex = target;
-
-    moves++;
-    movesEl.textContent = moves;
-    if(!timerInterval) startTimer();
-    renderTiles();
-    if(checkSolved()){
-      stopTimer();
-      setTimeout(()=> alert(`Solved in ${moves} moves and ${timerEl.textContent}!`),200);
-    }
-  }
-}
-
-function getNeighbors(pos){
-  const r = Math.floor(pos/cols), c = pos%cols;
-  const neighbors = [];
-  [[1,0],[-1,0],[0,1],[0,-1]].forEach(d=>{
-    const nr = r + d[0], nc = c + d[1];
-    if(nr>=0 && nr<rows && nc>=0 && nc<cols) neighbors.push(nr*cols + nc);
+function attachInteractions(el){
+  // click/select swap
+  el.addEventListener('click', (ev)=>{
+    ev.stopPropagation();
+    onPieceSelect(el);
   });
-  return neighbors;
+
+  // touch & drag: basic drag-and-drop visual, perform swap on drop onto another piece or empty board area near piece
+  let startX=0, startY=0, origLeft=0, origTop=0, dragging=false;
+
+  function startDrag(clientX, clientY){
+    dragging = true;
+    el.style.transition = 'none';
+    el.style.cursor = 'grabbing';
+    startX = clientX; startY = clientY;
+    origLeft = parseInt(el.style.left,10) || 0;
+    origTop = parseInt(el.style.top,10) || 0;
+    el.style.zIndex = 999;
+  }
+  function moveDrag(clientX, clientY){
+    if(!dragging) return;
+    const dx = clientX - startX, dy = clientY - startY;
+    el.style.left = (origLeft + dx) + 'px';
+    el.style.top = (origTop + dy) + 'px';
+  }
+  function endDrag(clientX, clientY){
+    if(!dragging) return;
+    dragging = false;
+    el.style.transition = '';
+    el.style.cursor = 'grab';
+    el.style.zIndex = '';
+    // detect drop target: nearest piece center within threshold
+    const rect = el.getBoundingClientRect();
+    const elCenterX = rect.left + rect.width/2;
+    const elCenterY = rect.top + rect.height/2;
+    const all = pieces.map(p=>p.el).filter(e=>e!==el);
+    let best = null; let bestDist = Infinity;
+    all.forEach(other=>{
+      const r = other.getBoundingClientRect();
+      const cx = r.left + r.width/2, cy = r.top + r.height/2;
+      const dx = cx - elCenterX, dy = cy - elCenterY;
+      const d = Math.sqrt(dx*dx + dy*dy);
+      if(d < bestDist){ bestDist = d; best = other; }
+    });
+    // threshold: allow swap if center within 120 px or within half of larger of heights
+    if(best && bestDist < 120){
+      swapByElements(el, best);
+    } else {
+      // snap back to original stored logical position coordinates if we want; for simplicity we leave piece where dropped
+      // but to keep UI tidy, animate it to nearest grid-like position: we'll snap to nearest allowed area so pieces stay visible
+      constrainInsideBoard(el);
+    }
+    updateSolvedStatus();
+  }
+
+  // mouse events
+  el.addEventListener('mousedown', (e)=>{
+    e.preventDefault();
+    startDrag(e.clientX, e.clientY);
+    const onMove = (ev)=> moveDrag(ev.clientX, ev.clientY);
+    const onUp = (ev)=>{ endDrag(ev.clientX, ev.clientY); window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  });
+
+  // touch events
+  el.addEventListener('touchstart', (e)=>{
+    const t = e.touches[0];
+    startDrag(t.clientX, t.clientY);
+  }, {passive:false});
+  el.addEventListener('touchmove', (e)=>{
+    const t = e.touches[0];
+    moveDrag(t.clientX, t.clientY);
+  }, {passive:false});
+  el.addEventListener('touchend', (e)=>{
+    // use last touch coords from changedTouches if available
+    const t = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : null;
+    endDrag(t ? t.clientX : 0, t ? t.clientY : 0);
+  });
 }
 
-function renderTiles(){
-  for(let pos=0; pos<tiles.length; pos++){
-    const tileObj = tiles.find(t=>t.currentPos === pos);
-    const wrapper = boardEl.children[pos];
-    wrapper.innerHTML = '';
-    if(tileObj){
-      wrapper.appendChild(tileObj.el);
-      if(tileObj.currentPos === emptyIndex){
-        tileObj.el.style.visibility = 'hidden';
-        tileObj.el.classList.add('empty');
-      } else {
-        tileObj.el.style.visibility = 'visible';
-        tileObj.el.classList.remove('empty');
-      }
-    }
+function constrainInsideBoard(el){
+  const br = board.getBoundingClientRect();
+  const er = el.getBoundingClientRect();
+  let left = parseInt(el.style.left,10) || 0;
+  let top = parseInt(el.style.top,10) || 0;
+  // ensure piece fully in board
+  if(left < 0) left = 0;
+  if(top < 0) top = 0;
+  if(left + er.width > br.width) left = Math.max(0, br.width - er.width);
+  if(top + er.height > br.height) top = Math.max(0, br.height - er.height);
+  el.style.left = left + 'px';
+  el.style.top = top + 'px';
+}
+
+function onPieceSelect(el){
+  if(selectedPiece === null){
+    selectedPiece = el;
+    el.classList.add('selected');
+  } else if(selectedPiece === el){
+    selectedPiece.classList.remove('selected');
+    selectedPiece = null;
+  } else {
+    // swap the two
+    swapByElements(selectedPiece, el);
+    selectedPiece.classList.remove('selected');
+    selectedPiece = null;
+    updateSolvedStatus();
   }
 }
 
-function shuffleByRandomMoves(count=200){
-  for(let i=0;i<count;i++){
-    const neigh = getNeighbors(emptyIndex);
-    const pick = neigh[Math.floor(Math.random()*neigh.length)];
-    const tileObj = tiles.find(t=>t.currentPos === pick);
-    if(tileObj){
-      const tmp = tileObj.currentPos;
-      tileObj.currentPos = emptyIndex;
-      tiles.find(t=>t.currentPos===emptyIndex && t!==tileObj).currentPos = tmp;
-      emptyIndex = pick;
-    }
+function swapByElements(elA, elB){
+  // swap backgrounds & sizes & positions & logical currentIndex
+  const pa = pieces.find(p => p.el === elA);
+  const pb = pieces.find(p => p.el === elB);
+  if(!pa || !pb) return;
+  // animate swap: exchange left/top positions visually
+  const leftA = elA.style.left; const topA = elA.style.top;
+  const leftB = elB.style.left; const topB = elB.style.top;
+  elA.style.transition = 'transform 200ms ease, left 200ms ease, top 200ms ease';
+  elB.style.transition = 'transform 200ms ease, left 200ms ease, top 200ms ease';
+  elA.style.left = leftB; elA.style.top = topB;
+  elB.style.left = leftA; elB.style.top = topA;
+  // swap logical indices
+  const tmpIdx = pa.currentIndex; pa.currentIndex = pb.currentIndex; pb.currentIndex = tmpIdx;
+  // increment move
+  moves++; movesSpan.textContent = String(moves);
+  setTimeout(()=>{ elA.style.transition=''; elB.style.transition=''; }, 240);
+}
+
+function shuffleLogicalPositions(times=30){
+  // randomly pick two pieces and swap their logical indices and positions (visual left/top)
+  for(let i=0;i<times;i++){
+    const a = pieces[Math.floor(Math.random()*pieces.length)];
+    const b = pieces[Math.floor(Math.random()*pieces.length)];
+    if(a === b) continue;
+    // swap currentIndex
+    const tmp = a.currentIndex; a.currentIndex = b.currentIndex; b.currentIndex = tmp;
+    // swap positions (left/top)
+    const la = a.el.style.left, ta = a.el.style.top;
+    const lb = b.el.style.left, tb = b.el.style.top;
+    a.el.style.left = lb; a.el.style.top = tb;
+    b.el.style.left = la; b.el.style.top = ta;
+  }
+  moves = 0; movesSpan.textContent = '0';
+}
+
+function updateSolvedStatus(){
+  const ok = pieces.every(p => p.currentIndex === p.correctIndex);
+  solvedSpan.textContent = ok ? 'Yes' : 'No';
+  if(ok){
+    // small celebration
+    board.style.boxShadow = '0 10px 60px rgba(37,99,235,0.25), 0 0 40px rgba(37,99,235,0.12)';
+    setTimeout(()=> board.style.boxShadow = '', 1200);
+  } else {
+    board.style.boxShadow = '';
   }
 }
 
-function checkSolved(){
-  return tiles.every(t => t.currentPos === t.correctPos);
-}
-
-// button events
-startBtn.addEventListener('click', ()=>{
-  cols = rows = parseInt(sizeSelect.value,10);
-  resetStatus();
-  img.onload = ()=>{
-    buildBoard();
-    shuffleByRandomMoves(250);
-    const emp = tiles.find(t=>t.correctPos === tiles.length-1);
-    emptyIndex = emp.currentPos;
-    renderTiles();
-  };
-  // if already loaded, trigger onload manually
-  if(img.complete) img.onload();
+// public actions
+createBtn.addEventListener('click', ()=>{
+  if(!img.complete){ alert('Image is still loading — try again in a moment.'); return; }
+  // clear & build
+  buildPieces();
+  // shuffle intensity
+  const t = parseInt(intensitySelect.value,10) || 30;
+  shuffleLogicalPositions(t);
+  // ensure pieces are inside board
+  pieces.forEach(p => constrainInsideBoard(p.el));
+  updateSolvedStatus();
 });
 
-shuffleBtn.addEventListener('click', ()=>{
-  if(tiles.length===0) return;
-  shuffleByRandomMoves(200);
-  const emp = tiles.find(t=>t.correctPos === tiles.length-1);
-  emptyIndex = emp.currentPos;
-  moves = 0;
-  movesEl.textContent = '0';
-  stopTimer();
-  timerEl.textContent = '00:00';
-  renderTiles();
+reshuffleBtn.addEventListener('click', ()=>{
+  if(pieces.length===0) return;
+  const t = parseInt(intensitySelect.value,10) || 30;
+  shuffleLogicalPositions(t);
+  pieces.forEach(p => constrainInsideBoard(p.el));
+  updateSolvedStatus();
 });
 
 solveBtn.addEventListener('click', ()=>{
-  if(tiles.length===0) return;
-  tiles.forEach(t=> t.currentPos = t.correctPos);
-  emptyIndex = tiles.length-1;
-  moves = 0;
-  movesEl.textContent = '0';
-  stopTimer();
-  timerEl.textContent = '00:00';
-  renderTiles();
+  // snap all pieces to solved vertical stack aligned at left=0, top = cumulative y within board
+  const br = board.getBoundingClientRect();
+  // sort pieces by correctIndex and stack vertically
+  let curY = 0;
+  pieces.sort((a,b)=>a.correctIndex - b.correctIndex);
+  pieces.forEach(p=>{
+    p.el.style.left = '0px';
+    p.el.style.top = curY + 'px';
+    p.currentIndex = p.correctIndex;
+    curY += p.height;
+    // ensure not overflow
+    if(curY > br.height) p.el.style.top = (br.height - p.height) + 'px';
+  });
+  moves = 0; movesSpan.textContent = '0';
+  updateSolvedStatus();
 });
 
-// initial placeholder
-function makePlaceholder(){
-  boardEl.style.width = 'min(68vmin,680px)';
-  boardEl.style.height = 'min(68vmin,680px)';
-  boardEl.innerHTML = '';
-  const pCols = 4, pRows = 4;
-  boardEl.style.gridTemplateColumns = `repeat(${pCols}, 1fr)`;
-  boardEl.style.gridTemplateRows = `repeat(${pRows}, 1fr)`;
-  for(let i=0;i<pCols*pRows;i++){
-    const wrapper = document.createElement('div');
-    wrapper.style.width='100%'; wrapper.style.height='100%';
-    wrapper.style.borderRadius='6px';
-    wrapper.style.background='linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))';
-    wrapper.style.backdropFilter='blur(2px)';
-    boardEl.appendChild(wrapper);
-  }
-}
-makePlaceholder();
-
-window.addEventListener('resize', ()=>{
-  if(tiles.length===0) return;
-  setTimeout(()=>{
-    const currentPositions = tiles.map(t=>t.currentPos);
-    buildBoard();
-    tiles.forEach((t,i)=> t.currentPos = currentPositions[i]);
-    const emp = tiles.find(t=>t.correctPos === tiles.length-1);
-    emptyIndex = emp.currentPos;
-    renderTiles();
-  },200);
+// allow clicking on empty board to cancel selection
+board.addEventListener('click', (e)=>{
+  if(selectedPiece){ selectedPiece.classList.remove('selected'); selectedPiece = null; }
 });
+
+// build initial placeholder layout when image loads (automatically create & shuffle small)
+img.onload = ()=>{
+  // size the board square based on current computed size — but buildPieces uses getBoundingClientRect
+  // auto-create once loaded for convenience
+  createBtn.click();
+};
+
+// defensive: if image fails to load, show message
+img.onerror = ()=>{ alert('Image failed to load from the provided URL. Either the URL blocks cross-origin canvas access or is invalid. If so, please upload the image file instead.'); };
+
 </script>
 </body>
 </html>
