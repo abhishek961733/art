@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rialo 15-piece Puzzle</title>
 <style>
-body{margin:0;font-family:Arial,sans-serif;background:#07102a;color:#e6eef8;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:20px}
+body{margin:0;font-family:sans-serif;background:#07102a;color:#e6eef8;display:flex;flex-direction:column;align-items:center;padding:20px}
 h1{margin-bottom:12px;text-align:center}
 #controls{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;justify-content:center}
 button,select{padding:8px 12px;border:none;border-radius:6px;background:#2563eb;color:#fff;cursor:pointer;font-weight:600}
-#board{position:relative;width:480px;height:480px;background:#02102b;border-radius:12px;overflow:hidden;touch-action:none}
-.piece{position:absolute;cursor:grab;transition:all 0.3s ease;will-change:transform;clip-path:url(#rialoClip)}
+#board{width:480px;height:480px;position:relative}
+.piece{cursor:grab;transition:all 0.2s ease;position:absolute}
 .piece.selected{outline:3px solid #38bdf8;transform:scale(1.05)}
 #info{margin-top:10px;font-size:13px;text-align:center}
 </style>
@@ -25,43 +25,8 @@ button,select{padding:8px 12px;border:none;border-radius:6px;background:#2563eb;
   <button id="solve">Show Solution</button>
   <button id="hint">Hint</button>
 </div>
-<div id="board">
-  <!-- Define Rialo clipPath once -->
-  <svg width="0" height="0">
-    <clipPath id="rialoClip" clipPathUnits="objectBoundingBox">
-      <path d="M213.999527,159.324097 C207.026718,158.989792 200.536591,159.727524 194.067123,158.475800 
-	C180.915497,155.931168 169.706528,144.139648 168.838013,131.592026 
-	C167.785904,116.391884 176.070190,103.557045 189.837372,98.912498 
-	C193.826019,97.566879 197.841568,96.922516 202.076935,96.935860 
-	C231.408005,97.028297 260.741699,96.791473 290.069611,97.113045 
-	C300.958160,97.232437 311.156097,100.159859 318.625000,109.048271 
-	C323.663635,115.044533 325.620392,122.183014 326.177704,129.774429 
-	C327.215851,143.915710 335.758820,153.973831 349.629150,157.138794 
-	C353.034363,157.915787 356.461456,158.442642 359.957764,158.812347 
-	C374.063019,160.303833 387.686462,172.540665 386.365021,191.842606 
-	C385.403900,205.882233 372.286652,219.099792 357.527222,219.269501 
-	C337.197937,219.503281 316.859436,219.069046 296.533600,219.423080 
-	C281.835449,219.679123 267.078430,229.095657 265.696442,245.629837 
-	C264.729675,257.196228 270.379333,269.432617 280.880585,274.866028 
-	C286.810852,277.934357 293.180664,278.664429 299.641663,279.295929 
-	C314.037903,280.703033 325.756348,293.831238 326.071594,310.315247 
-	C326.437988,329.473297 326.579041,348.656830 326.016968,367.805786 
-	C325.420502,388.125885 313.363281,399.881805 296.644104,400.870819 
-	C277.388336,402.009857 263.313995,388.572357 262.925140,368.190491 
-	C262.581909,350.198273 262.188568,332.162903 263.031158,314.203522 
-	C264.050079,292.485168 249.695572,279.254456 227.996048,279.427185 
-	C202.004013,279.634125 176.011017,279.935852 150.019577,279.849701 
-	C143.578613,279.828369 137.006546,280.116852 130.648132,278.517761 
-	C115.806152,274.785126 106.920387,261.899384 107.721382,245.415070 
-	C108.362457,232.221756 119.653625,220.550751 133.791580,218.562317 
-	C147.062317,216.695831 160.410553,217.859924 173.721252,217.731949 
-	C192.384735,217.552505 211.051819,217.782196 229.716553,217.683731 
-	C241.262360,217.622833 251.487137,214.286087 258.339111,204.268860 
-	C269.602722,187.802002 260.633057,166.225235 240.819992,161.059921 
-	C232.069519,158.778625 223.283035,159.676208 213.999527,159.324097 z"/>
-    </clipPath>
-  </svg>
-</div>
+
+<div id="board"></div>
 <div id="info">Moves: <span id="moves">0</span> · Solved: <span id="solved">No</span></div>
 
 <script>
@@ -76,34 +41,49 @@ const shuffleCountSelect=document.getElementById('shuffleCount');
 const movesSpan=document.getElementById('moves');
 const solvedSpan=document.getElementById('solved');
 
-let img=new Image();
-img.crossOrigin='anonymous';
-img.src=IMAGE_SRC;
-
 let pieces=[],selectedPiece=null,moves=0;
 
-function resetState(){pieces=[];selectedPiece=null;moves=0;movesSpan.textContent='0';solvedSpan.textContent='No';board.querySelectorAll('.piece').forEach(p=>p.remove());}
+const RIALO_PATH="M213.999527,159.324097 C207.026718,158.989792 200.536591,159.727524 194.067123,158.475800 C180.915497,155.931168 169.706528,144.139648 168.838013,131.592026 C167.785904,116.391884 176.070190,103.557045 189.837372,98.912498 C193.826019,97.566879 197.841568,96.922516 202.076935,96.935860 C231.408005,97.028297 260.741699,96.791473 290.069611,97.113045 C300.958160,97.232437 311.156097,100.159859 318.625000,109.048271 C323.663635,115.044533 325.620392,122.183014 326.177704,129.774429 C327.215851,143.915710 335.758820,153.973831 349.629150,157.138794 C353.034363,157.915787 356.461456,158.442642 359.957764,158.812347 C374.063019,160.303833 387.686462,172.540665 386.365021,191.842606 C385.403900,205.882233 372.286652,219.099792 357.527222,219.269501 C337.197937,219.503281 316.859436,219.069046 296.533600,219.423080 C281.835449,219.679123 267.078430,229.095657 265.696442,245.629837 C264.729675,257.196228 270.379333,269.432617 280.880585,274.866028 C286.810852,277.934357 293.180664,278.664429 299.641663,279.295929 C314.037903,280.703033 325.756348,293.831238 326.071594,310.315247 C326.437988,329.473297 326.579041,348.656830 326.016968,367.805786 C325.420502,388.125885 313.363281,399.881805 296.644104,400.870819 C277.388336,402.009857 263.313995,388.572357 262.925140,368.190491 C262.581909,350.198273 262.188568,332.162903 263.031158,314.203522 C264.050079,292.485168 249.695572,279.254456 227.996048,279.427185 C202.004013,279.634125 176.011017,279.935852 150.019577,279.849701 C143.578613,279.828369 137.006546,280.116852 130.648132,278.517761 C115.806152,274.785126 106.920387,261.899384 107.721382,245.415070 C108.362457,232.221756 119.653625,220.550751 133.791580,218.562317 C147.062317,216.695831 160.410553,217.859924 173.721252,217.731949 C192.384735,217.552505 211.051819,217.782196 229.716553,217.683731 C241.262360,217.622833 251.487137,214.286087 258.339111,204.268860 C269.602722,187.802002 260.633057,166.225235 240.819992,161.059921 C232.069519,158.778625 223.283035,159.676208 213.999527,159.324097 z";
+
+function resetState(){
+  pieces=[];selectedPiece=null;moves=0;
+  movesSpan.textContent='0';solvedSpan.textContent='No';
+  board.innerHTML='';
+}
 
 function createPieces(){
   resetState();
-  const boardSize=board.clientWidth;
-  const sliceHeight=Math.floor(boardSize/PIECE_COUNT);
+  const svgNS="http://www.w3.org/2000/svg";
+  const width=480,height=480;
+  const sliceH=Math.floor(height/PIECE_COUNT);
+
   for(let i=0;i<PIECE_COUNT;i++){
-    const pieceEl=document.createElement('div');
-    pieceEl.className='piece';
-    pieceEl.style.width='100%';
-    pieceEl.style.height=sliceHeight+'px';
-    pieceEl.style.top=(i*sliceHeight)+'px';
-    pieceEl.style.left='0px';
-    pieceEl.dataset.correctIndex=i;
-    pieceEl.style.backgroundImage=`url(${IMAGE_SRC})`;
-    pieceEl.style.backgroundSize='cover';
-    pieceEl.style.backgroundPosition='center';
-    pieceEl.style.backgroundRepeat='no-repeat';
-    board.appendChild(pieceEl);
-    pieces.push({el:pieceEl,currentIndex:i,correctIndex:i,y:i*sliceHeight});
-    attachInteractions(pieceEl);
+    const pieceSvg=document.createElementNS(svgNS,"svg");
+    pieceSvg.setAttribute("width",width);
+    pieceSvg.setAttribute("height",sliceH);
+    pieceSvg.setAttribute("class","piece");
+    pieceSvg.style.top=(i*sliceH)+'px';
+    pieceSvg.style.left='0px';
+
+    const clip=document.createElementNS(svgNS,"clipPath");
+    clip.setAttribute("id","clip"+i);
+    const path=document.createElementNS(svgNS,"path");
+    path.setAttribute("d",RIALO_PATH);
+    clip.appendChild(path);
+    pieceSvg.appendChild(clip);
+
+    const imgEl=document.createElementNS(svgNS,"image");
+    imgEl.setAttribute("href",IMAGE_SRC);
+    imgEl.setAttribute("width",width);
+    imgEl.setAttribute("height",height);
+    imgEl.setAttribute("clip-path","url(#clip"+i+")");
+    pieceSvg.appendChild(imgEl);
+
+    board.appendChild(pieceSvg);
+    pieces.push({el:pieceSvg,correctIndex:i,currentIndex:i,y:i*sliceH});
+    attachInteractions(pieceSvg);
   }
+
   shufflePieces(parseInt(shuffleCountSelect.value,10));
   updateSolvedStatus();
 }
@@ -113,8 +93,7 @@ function attachInteractions(el){
   let dragging=false,startX=0,startY=0,origX=0,origY=0;
   el.addEventListener('mousedown',(e)=>{
     e.preventDefault();
-    dragging=true;
-    startX=e.clientX;startY=e.clientY;
+    dragging=true;startX=e.clientX;startY=e.clientY;
     origX=parseInt(el.style.left);origY=parseInt(el.style.top);
     el.style.zIndex=999;
     const onMove=(ev)=>{if(dragging){el.style.left=origX+ev.clientX-startX+'px';el.style.top=origY+ev.clientY-startY+'px';}};
@@ -126,7 +105,8 @@ function attachInteractions(el){
 function onPieceSelect(el){
   if(!selectedPiece){selectedPiece=el;el.classList.add('selected');return;}
   if(selectedPiece===el){selectedPiece.classList.remove('selected');selectedPiece=null;return;}
-  swapByElements(selectedPiece,el);selectedPiece.classList.remove('selected');selectedPiece=null;
+  swapByElements(selectedPiece,el);
+  selectedPiece.classList.remove('selected');selectedPiece=null;
 }
 
 function swapByElements(a,b){
@@ -147,23 +127,11 @@ function swapNearest(el){
   if(nearest&&minDist<80) swapByElements(el,nearest);
 }
 
-function shufflePieces(times=40){
-  for(let i=0;i<times;i++){
-    const a=pieces[Math.floor(Math.random()*pieces.length)];
-    const b=pieces[Math.floor(Math.random()*pieces.length)];
-    if(a===b) continue;
-    swapByElements(a.el,b.el);
-  }
-  moves=0;movesSpan.textContent='0';
-}
+function shufflePieces(times=40){for(let i=0;i<times;i++){const a=pieces[Math.floor(Math.random()*pieces.length)];const b=pieces[Math.floor(Math.random()*pieces.length)];if(a===b) continue;swapByElements(a.el,b.el);}moves=0;movesSpan.textContent='0';}
 
-function updateSolvedStatus(){
-  const ok=pieces.every(p=>p.currentIndex===p.correctIndex);
-  solvedSpan.textContent=ok?'Yes':'No';
-  if(ok){board.style.boxShadow='0 0 40px #2563eb,0 0 80px #38bdf8';setTimeout(()=>board.style.boxShadow='',1200);}
-}
+function updateSolvedStatus(){const ok=pieces.every(p=>p.currentIndex===p.correctIndex);solvedSpan.textContent=ok?'Yes':'No';if(ok){board.style.boxShadow='0 0 40px #2563eb,0 0 80px #38bdf8';setTimeout(()=>board.style.boxShadow='',1200);}}
 
-createBtn.addEventListener('click',()=>{if(!img.complete){alert('Image loading...');return;}createPieces();});
+createBtn.addEventListener('click',()=>{createPieces();});
 reshuffleBtn.addEventListener('click',()=>{shufflePieces(parseInt(shuffleCountSelect.value,10));});
 solveBtn.addEventListener('click',()=>{pieces.forEach(p=>{p.currentIndex=p.correctIndex;p.el.style.top=p.y+'px';p.el.style.left='0px';});moves=0;movesSpan.textContent='0';updateSolvedStatus();});
 hintBtn.addEventListener('click',()=>{const wrong=pieces.filter(p=>p.currentIndex!==p.correctIndex);if(wrong.length>0){const p=wrong[0];p.el.style.outline='3px solid #38bdf8';setTimeout(()=>{p.el.style.outline='';},1500);}});
